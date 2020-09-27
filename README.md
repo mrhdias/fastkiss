@@ -44,4 +44,5 @@ $ nano -w example.nim
 $ nim c -r example.nim
 $ sudo systemctl start nginx
 $ wget -qO- http://example:8080/test
+Hello World!!⏎  
 ```
