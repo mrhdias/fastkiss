@@ -15,7 +15,7 @@ proc main() =
 main()
 ```
 
-FastCGI NGINX Configuration Example
+NGINX FastCGI Configuration File Example
 ```
 server {
   listen  8080;
