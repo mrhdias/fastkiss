@@ -12,9 +12,9 @@ import asyncnet, asyncdispatch, asyncfile
 import httpcore
 import asyncfcgibodyparser
 import tables
-import sequtils
+from sequtils import toSeq, map
 from strformat import `&`
-from strutils import rfind, `%`, parseInt, split, strip
+from strutils import rfind, `%`, parseInt, split, strip, toUpperAscii
 import re
 import oids
 import mimetypes
@@ -536,8 +536,6 @@ proc addRoute[T: string|Regex](
 
     server.routes[httpMethods[`method`]].add(initRouteAttributes(pattern, callback))
 
-
-
 proc get*[T: string|Regex](
   server: AsyncFCGIServer,
   pattern: T,
@@ -573,7 +571,7 @@ proc match*[T: string|Regex](
   methods: openArray[string],
   pattern: T,
   callback: proc (request: Request): Future[void] {.closure, gcsafe.}
-) = server.addRoute(methods, pattern, callback)
+) = server.addRoute(methods.map(toUpperAscii), pattern, callback)
 
 #
 # End handle Methods
