@@ -47,7 +47,8 @@ $ wget -qO- http://example:8080/test
 Hello World!!⏎
 ```
 
-Available Router Methods
+### Available Router Methods
+Routes that respond to any HTTP verb
 ```nim
 get[T: string|Regex](
   server: AsyncFCGIServer,
@@ -84,16 +85,22 @@ options[T: string|Regex](
   pattern: T,
   callback: proc (request: Request): Future[void] {.closure, gcsafe.}
 )
+```
 
-any[T: string|Regex](
-  server: AsyncFCGIServer,
-  pattern: T,
-  callback: proc (request: Request): Future[void] {.closure, gcsafe.}
-)
-
+Route that responds to multiple HTTP verbs
+```nim
 match[T: string|Regex](
   server: AsyncFCGIServer,
   methods: openArray[string],
+  pattern: T,
+  callback: proc (request: Request): Future[void] {.closure, gcsafe.}
+)
+```
+
+Route that responds to all HTTP verbs
+```nim
+any[T: string|Regex](
+  server: AsyncFCGIServer,
   pattern: T,
   callback: proc (request: Request): Future[void] {.closure, gcsafe.}
 )
