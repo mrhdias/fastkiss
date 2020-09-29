@@ -2,14 +2,21 @@
 ⚠️ WARNING: This library is still in heavy development. ⚠️
 ```nim
 import fastkiss/asyncfcgiserver
+import re
+from strutils import `%`
 
 proc main() =
   let app = newAsyncFCGIServer()
   app.config.port = 9000
-  
+
   app.get("/test", proc (req: Request) {.async.} =
     await req.response("Hello World!")
   )
+
+  app.get(r"/test/(\w+)".re, proc (req: Request) {.async.} =
+    await req.response("Hello $1!" % req.regexCaptures[0])
+  )
+
   app.run()
 
 main()
