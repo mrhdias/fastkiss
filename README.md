@@ -44,5 +44,57 @@ $ nano -w example.nim
 $ nim c -r example.nim
 $ sudo systemctl start nginx
 $ wget -qO- http://example:8080/test
-Hello World!!⏎  
+Hello World!!⏎
+```
+
+Available Router Methods
+```nim
+get[T: string|Regex](
+  server: AsyncFCGIServer,
+  pattern: T,
+  callback: proc (request: Request): Future[void] {.closure, gcsafe.}
+)
+
+post[T: string|Regex](
+  server: AsyncFCGIServer,
+  pattern: T,
+  callback: proc (request: Request): Future[void] {.closure, gcsafe.}
+)
+
+put[T: string|Regex](
+  server: AsyncFCGIServer,
+  pattern: T,
+  callback: proc (request: Request): Future[void] {.closure, gcsafe.}
+)
+
+patch[T: string|Regex](
+  server: AsyncFCGIServer,
+  pattern: T,
+  callback: proc (request: Request): Future[void] {.closure, gcsafe.}
+)
+
+delete[T: string|Regex](
+  server: AsyncFCGIServer,
+  pattern: T,
+  callback: proc (request: Request): Future[void] {.closure, gcsafe.}
+)
+
+options[T: string|Regex](
+  server: AsyncFCGIServer,
+  pattern: T,
+  callback: proc (request: Request): Future[void] {.closure, gcsafe.}
+)
+
+any[T: string|Regex](
+  server: AsyncFCGIServer,
+  pattern: T,
+  callback: proc (request: Request): Future[void] {.closure, gcsafe.}
+)
+
+match[T: string|Regex](
+  server: AsyncFCGIServer,
+  methods: openArray[string],
+  pattern: T,
+  callback: proc (request: Request): Future[void] {.closure, gcsafe.}
+)
 ```
