@@ -1,5 +1,4 @@
 #
-#
 #       FastKiss Async FastCgi Body Parser
 #        (c) Copyright 2020 Henrique Dias
 #
@@ -39,12 +38,12 @@ type
 
 proc splitHeader(s: string): array[2, string] =
   var p = find(s, ':')
-  if not (p > 0 and p < high(s)):
+  if not (p > 0 and p < s.high):
     return ["", ""]
 
   let head = s[0 .. p-1]
   p += 1; while s[p] == ' ': p += 1
-  return [head, s[p .. high(s)]]
+  return [head, s[p .. ^1]]
 
 
 proc splitContentDisposition(s: string): (string, seq[string]) =
@@ -72,7 +71,7 @@ proc splitContentDisposition(s: string): (string, seq[string]) =
     buff.add(s[p])
     p += 1
 
-  if buff.len > 0 and buff[high(buff)] == '"':
+  if buff.len > 0 and buff[^1] == '"':
     parts.add(buff)
 
   return (firstParameter, parts)
@@ -135,7 +134,7 @@ proc processHeader(rawHeaders: seq[string]): Future[(string, Table[string, strin
       for contentDispositionPart in contentDispositionParts:
         let pair = contentDispositionPart.split("=", maxsplit=1)
         if pair.len == 2:
-          let value = if pair[1][0] == '"' and pair[1][high(pair[1])] == '"': pair[1][1 .. pair[1].len-2] else: pair[1]
+          let value = if pair[1][0] == '"' and pair[1][^1] == '"': pair[1][1 .. pair[1].len-2] else: pair[1]
           # echo ">> Pair: " & pair[0] & " = " & value
           if value.len > 0:
             if pair[0] == "name":
@@ -164,8 +163,8 @@ proc getBoundary(contentType: string): string =
   let parts = contentType.split(';')
   if parts.len == 2 and parts[0] == "multipart/form-data":
     let idx = if parts[1][0] == ' ': 1 else: 0
-    if parts[1][idx .. high(parts[1])].startsWith("boundary="):
-      let boundary = parts[1][(idx + 9) .. high(parts[1])]
+    if parts[1][idx .. ^1].startsWith("boundary="):
+      let boundary = parts[1][(idx + 9) .. ^1]
       return &"--{boundary}"
   return ""
 
