@@ -554,11 +554,23 @@ proc put*[T: string|Regex](
   callback: proc (request: Request): Future[void] {.closure, gcsafe.},
 ) = server.addRoute(@["PUT"], pattern, callback)
 
+proc patch*[T: string|Regex](
+  server: AsyncFCGIServer,
+  pattern: T,
+  callback: proc (request: Request): Future[void] {.closure, gcsafe.},
+) = server.addRoute(@["PATCH"], pattern, callback)
+
 proc delete*[T: string|Regex](
   server: AsyncFCGIServer,
   pattern: T,
   callback: proc (request: Request): Future[void] {.closure, gcsafe.},
 ) = server.addRoute(@["DELETE"], pattern, callback)
+
+proc options*[T: string|Regex](
+  server: AsyncFCGIServer,
+  pattern: T,
+  callback: proc (request: Request): Future[void] {.closure, gcsafe.},
+) = server.addRoute(@["OPTIONS"], pattern, callback)
 
 proc any*[T: string|Regex](
   server: AsyncFCGIServer,
