@@ -1,5 +1,4 @@
 #
-#
 #         FastKiss Async FastCgi Server
 #        (c) Copyright 2020 Henrique Dias
 #
@@ -244,7 +243,7 @@ proc sendFile(req: Request, filepath: string): Future[void] {.async.} =
 
   var extension = "unknown"
   if ((let p = filepath.rfind('.')); p > -1):
-    extension = filepath[p+1 .. filepath.high]
+    extension = filepath[p+1 .. ^1]
 
   let payload = "status: 200 OK\c\Lcontent-type: $1\c\L\c\L" % mt.getMimetype(extension)
 
@@ -283,7 +282,7 @@ proc sendFile(req: Request, filepath: string): Future[void] {.async.} =
 proc fileserver*(req: Request, staticDir=""): Future[void] {.async.} =
   var url_path = $req.headers["document_uri"]
 
-  url_path = if url_path.len > 1 and url_path[0] == '/': url_path[1 .. url_path.high] else: "index.html"
+  url_path = if url_path.len > 1 and url_path[0] == '/': url_path[1 .. ^1] else: "index.html"
   var path = static_dir / url_path
 
   if existsDir(path):
@@ -447,13 +446,16 @@ proc processClient(
         proc routeCallback(
           routes: seq[RouteAttributes],
           documentUri: string): proc (request: Request): Future[void] {.closure, gcsafe.} =
+
+          let pattern = if (documentUri.len > 1 and documentUri[^1] == '/'): documentUri[0 ..< ^1] else: documentUri
+
           for route in routes:
             if route.regexPattern != nil:
-              if documentUri =~ route.regexPattern:
+              if pattern =~ route.regexPattern:
                 req.regexCaptures = matches
                 return route.callback
             elif route.pathPattern != "":
-              if route.pathPattern == documentUri:
+              if route.pathPattern == pattern:
                 return route.callback
 
           return nil
