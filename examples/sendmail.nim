@@ -21,7 +21,7 @@ proc validateEmail(emailAddress: string): bool =
 proc showForm(req: Request) {.async.} =
   let htmlpage = """
 <!Doctype html>
-<html  lang="en">
+<html lang="en">
 <head>
 <meta charset="utf-8"/>
 <script>
