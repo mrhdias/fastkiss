@@ -58,9 +58,9 @@ type
     address*: string
     reuseAddr*: bool
     reusePort*: bool
-    tmpUploadDir*: string
-    autoCleanTmpUploadDir*: bool
-    staticDir*: string
+    tmpUploadDir*: string ## Default temporary directory of the current user to save temporary files
+    autoCleanTmpUploadDir*: bool ## The value true will cause the temporary files left after request processing to be removed.
+    staticDir*: string ## To serve static files such as images, CSS files, and JavaScript files
     maxBody*: int ## The maximum content-length that will be read for the body
 
   AsyncFCGIServer* = ref object
