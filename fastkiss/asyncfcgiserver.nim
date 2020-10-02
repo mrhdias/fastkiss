@@ -56,6 +56,8 @@ type
   Config* = object
     port*: int
     address*: string
+    reuseAddr*: bool
+    reusePort*: bool
     tmpUploadDir*: string
     autoCleanTmpUploadDir*: bool
     staticDir*: string
@@ -63,8 +65,6 @@ type
 
   AsyncFCGIServer* = ref object
     socket*: AsyncSocket
-    reuseAddr*: bool
-    reusePort*: bool
     allowedIps*: seq[string]
     routes: TableRef[
       HttpMethod,
@@ -626,11 +626,11 @@ proc run*(server: AsyncFCGIServer) =
   waitFor server.serve()
 
 
-proc newAsyncFCGIServer*(reuseAddr = true, reusePort = false): AsyncFCGIServer =
+proc newAsyncFCGIServer*(): AsyncFCGIServer =
   ## Creates a new ``AsyncFCGIServer`` instance.
   new result
-  result.reuseAddr = reuseAddr
-  result.reusePort = reusePort
+  result.config.reuseAddr = true
+  result.config.reusePort = false
   result.routes = newTable[
     HttpMethod,
     seq[RouteAttributes]
