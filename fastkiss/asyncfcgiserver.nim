@@ -597,9 +597,9 @@ proc serve*(server: AsyncFCGIServer) {.async.} =
 
   ## Starts the process of listening for incoming TCP connections
   server.socket = newAsyncSocket()
-  if server.reuseAddr:
+  if server.config.reuseAddr:
     server.socket.setSockOpt(OptReuseAddr, true)
-  if server.reusePort:
+  if server.config.reusePort:
     server.socket.setSockOpt(OptReusePort, true)
   server.socket.bindAddr(Port(server.config.port), server.config.address)
   server.socket.listen()
