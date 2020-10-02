@@ -7,7 +7,7 @@ from strutils import `%`
 
 proc main() =
   let app = newAsyncFCGIServer()
-  app.config.port = 9000
+  app.config.port = 9000 # optional if default port
 
   app.get("/test", proc (req: Request) {.async.} =
     await req.response("Hello World!")
@@ -52,6 +52,21 @@ $ nim c -r example.nim
 $ sudo systemctl start nginx
 $ wget -qO- http://example:8080/test
 Hello World!!⏎
+```
+
+### Configuration Options
+```nim
+# Default Port
+config.port = 9000
+config.address = ""
+# Default temporary directory of the current user to save temporary files
+config.tmpUploadDir = getTempDir()
+# The value true will cause the temporary files left after request processing to be removed.
+config.autoCleanTmpUploadDir = true
+# To serve static files such as images, CSS files, and JavaScript files
+config.staticDir = ""
+# Sets the maximum allowed size of the client request body
+config.maxBody = 8388608 # Default 8MB = 8388608 Bytes
 ```
 
 ### Available Router Methods
