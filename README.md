@@ -56,9 +56,11 @@ Hello World!!⏎
 
 ### Configuration Options
 ```nim
-# Default Port
-config.port = 9000
+config.port = 9000 # Default Port
 config.address = ""
+config.reuseAddr = true # Default value
+config.reusePort = false # Default value
+
 # Default temporary directory of the current user to save temporary files
 config.tmpUploadDir = getTempDir()
 # The value true will cause the temporary files left after request processing to be removed.
