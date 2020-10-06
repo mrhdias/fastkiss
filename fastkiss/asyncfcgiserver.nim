@@ -477,7 +477,9 @@ proc processClient(
         ### end find routes ###
 
         # begin serve static files
-        if server.config.staticDir != "" and existsDir(server.config.staticDir):
+        if (req.reqMethod == HttpGet) and
+          (server.config.staticDir != "") and
+            existsDir(server.config.staticDir):
           echo "serve static file"
           await req.fileserver(server.config.staticDir)
           return
