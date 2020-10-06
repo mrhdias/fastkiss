@@ -623,7 +623,8 @@ proc run*(server: AsyncFCGIServer) =
     if server.config.address == "": "0.0.0.0" else: server.config.address,
     $(server.config.port)
   ]
-  waitFor server.serve()
+  asyncCheck server.serve()
+  runForever()
 
 
 proc newAsyncFCGIServer*(): AsyncFCGIServer =
