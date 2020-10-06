@@ -648,8 +648,8 @@ proc newAsyncFCGIServer*(): AsyncFCGIServer =
     for add in fwsa.split(','):
       result.allowedIps.add(add.strip())
       
- when not defined(testing) and isMainModule:
-  proc main =
+when not defined(testing) and isMainModule:
+  proc main() =
     let app = newAsyncFCGIServer()
     app.get("/", proc (req: Request) {.async.} =
       await req.response("Hello World!")
