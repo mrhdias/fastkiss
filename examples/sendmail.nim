@@ -22,9 +22,22 @@ proc showForm(req: Request) {.async.} =
   let htmlpage = """
 <!Doctype html>
 <html lang="en">
-<head>
-<meta charset="utf-8"/>
-<script>
+  <head>
+    <meta charset="utf-8"/>
+    <title>Sendmail</title>
+  </head>
+  <body>
+    <form method="post" id="sendmail_form">
+      <strong>SendMail</strong><br />
+      To: <input type="text" name="to_address" value=""><br />
+      Subject: <input type="text" name="subject" value=""><br />
+      Message:<br />
+      <textarea name="message" rows="4" cols="20"></textarea><br />
+      <button onclick="sendmail();">Send</button>
+      <div id="warning">Not send</div>
+    </form>
+
+    <script>
 /*<![CDATA[*/
 
 function sendmail() {
@@ -76,21 +89,8 @@ function sendmail() {
 }
 
 /*]]>*/
-</script>
-</head>
-<body>
-
-<form method="post" id="sendmail_form">
-<strong>SendMail</strong><br />
-To: <input type="text" name="to_address" value=""><br />
-Subject: <input type="text" name="subject" value=""><br />
-Message:<br />
-<textarea name="message" rows="4" cols="20"></textarea><br />
-<button onclick="sendmail();">Send</button>
-<div id="warning">Not send</div>
-</form>
-
-</body>
+    </script>
+  </body>
 </html>
 """
   await req.response(htmlpage)
