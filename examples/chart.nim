@@ -1,6 +1,6 @@
 #
 # nimble install https://github.com/mrhdias/fastkiss
-# nim c -d:ssl -r chart.nim
+# nim c -r chart.nim
 # http://example:8080/
 #
 import fastkiss
@@ -41,6 +41,7 @@ proc showPage(req: Request) {.async.} =
     <div id="chart"></div>
     <script src="https://cdn.jsdelivr.net/npm/frappe-charts@1.2.4/dist/frappe-charts.min.iife.js"></script>
 <script>
+/*<![CDATA[*/
 
 const data = {
   labels: new Array(50).fill("00:00:00"),
@@ -96,6 +97,7 @@ window.setInterval(function(){
 update_chart();
 // clearInterval() 
 
+/*]]>*/
     </script>
   </body>
 </html>
