@@ -25,6 +25,7 @@ proc showForm(req: Request) {.async.} =
 <head>
 <meta charset="utf-8"/>
 <script>
+/*<![CDATA[*/
 
 function sendmail() {
   var form = document.getElementById('sendmail_form');
@@ -73,6 +74,8 @@ function sendmail() {
     console.log('Fetch Error :-S', err);
   });
 }
+
+/*]]>*/
 </script>
 </head>
 <body>
