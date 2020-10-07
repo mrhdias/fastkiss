@@ -63,7 +63,9 @@ proc setSession*(self: AsyncSessions): Session =
 
 
 proc getSession*(self: AsyncSessions, id: string): Session =
-  (self.pool[id].request_time = now(); self.pool[id])
+  if not self.pool.hasKey(id): return nil
+  self.pool[id].request_time = now()
+  return self.pool[id]
 
 
 proc delSession*(self: AsyncSessions, id: string) =
