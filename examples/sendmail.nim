@@ -3,7 +3,7 @@
 # nim c -d:ssl -r sendmail.nim
 # http://example:8080/sendmail
 #
-import fastkiss/asyncfcgiserver
+import fastkiss
 import fastkiss/utils
 import smtp
 import re
