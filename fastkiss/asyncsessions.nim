@@ -9,9 +9,9 @@
 import asyncdispatch
 import strtabs
 import tables
-import times
-import oids
-import strutils
+from times import DateTime, now, `-`, inSeconds
+from oids import genOid, `$`
+from md5 import toMD5, `$`
 
 export strtabs
 
@@ -24,7 +24,7 @@ type
 
 type
   AsyncSessions* = ref object of RootObj
-    pool*: TableRef[string, Session]
+    pool*: OrderedTableRef[string, Session]
     sessionTimeout: int
     sleepTime: int
     maxSessions*: int
@@ -37,36 +37,35 @@ proc sessionsManager(self: AsyncSessions): Future[void] {.async.} =
       continue
 
     # echo "Number of active sessions: ", self.pool.len
-    # echo "check for sessions timeout..."
-    var to_del = newSeq[string]()
+    # echo "check the oldest session id for session timeout..."
     for key, value in self.pool:
       if (now() - self.pool[key].requestTime).inSeconds > self.sessionTimeout:
-        # echo "session id timeout:", key
-        to_del.add(key)
-
-    for key in to_del:
-      if self.pool[key].callback != nil:
-        await self.pool[key].callback(key)
-      # echo "the session will be deleted:", key
-      self.pool.del(key)
+        # echo "session id timeout: ", key
+        if self.pool[key].callback != nil:
+          await self.pool[key].callback(key)
+        self.pool.del(key)
+      break
 
 
 proc setSession*(self: AsyncSessions): Session =
-  let sessionId = genOid()
+  let sessionId = $toMD5($genOid())
 
   return (self.pool[$sessionId] = Session(
-    id: $sessionId,
+    id: sessionId,
     map: newStringTable(),
     request_time: now(),
     callback: nil
-  ); self.pool[$sessionId])
+  ); self.pool[sessionId])
 
 
 proc getSession*(self: AsyncSessions, id: string): Session =
-  if not self.pool.hasKey(id): return nil
-  self.pool[id].request_time = now()
-  return self.pool[id]
+  var tmp: Session
+  if self.pool.pop(id, tmp):
+    tmp.request_time = now()
+    self.pool[id] = tmp
+    return self.pool[id]
 
+  return tmp
 
 proc delSession*(self: AsyncSessions, id: string) =
   ## Delete Session Id if exists.
@@ -85,6 +84,6 @@ proc newAsyncSessions*(
   new result
   result.sleepTime = sleepTime
   result.sessionTimeout = sessionTimeout
-  result.pool = newTable[string, Session]()
+  result.pool = newOrderedTable[string, Session]()
 
   asyncCheck result.sessionsManager()
