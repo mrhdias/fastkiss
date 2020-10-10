@@ -74,58 +74,58 @@ config.maxBody = 8388608 # Default 8MB = 8388608 Bytes
 ### Available Router Methods
 Routes that respond to any HTTP verb
 ```nim
-get[T: string|Regex](
+get*(
   server: AsyncFCGIServer,
-  pattern: T,
+  pattern: string | Regex,
   callback: proc (request: Request): Future[void] {.closure, gcsafe.}
 )
 
-post[T: string|Regex](
+post*(
   server: AsyncFCGIServer,
-  pattern: T,
+  pattern: string | Regex,
   callback: proc (request: Request): Future[void] {.closure, gcsafe.}
 )
 
-put[T: string|Regex](
+put*(
   server: AsyncFCGIServer,
-  pattern: T,
+  pattern: string | Regex,
   callback: proc (request: Request): Future[void] {.closure, gcsafe.}
 )
 
-patch[T: string|Regex](
+patch*(
   server: AsyncFCGIServer,
-  pattern: T,
+  pattern: string | Regex,
   callback: proc (request: Request): Future[void] {.closure, gcsafe.}
 )
 
-delete[T: string|Regex](
+delete*(
   server: AsyncFCGIServer,
-  pattern: T,
+  pattern: string | Regex,
   callback: proc (request: Request): Future[void] {.closure, gcsafe.}
 )
 
-options[T: string|Regex](
+options*(
   server: AsyncFCGIServer,
-  pattern: T,
+  pattern: string | Regex,
   callback: proc (request: Request): Future[void] {.closure, gcsafe.}
 )
 ```
 
 Route that responds to multiple HTTP verbs
 ```nim
-match[T: string|Regex](
+match*(
   server: AsyncFCGIServer,
   methods: openArray[string],
-  pattern: T,
+  pattern: string | Regex,
   callback: proc (request: Request): Future[void] {.closure, gcsafe.}
 )
 ```
 
 Route that responds to all HTTP verbs
 ```nim
-any[T: string|Regex](
+any*(
   server: AsyncFCGIServer,
-  pattern: T,
+  pattern: string | Regex,
   callback: proc (request: Request): Future[void] {.closure, gcsafe.}
 )
 ```
