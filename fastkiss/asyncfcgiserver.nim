@@ -524,10 +524,10 @@ proc initRouteAttributes(
   callback: callback
 )
 
-proc addRoute[T: string|Regex](
+proc addRoute(
   server: AsyncFCGIServer,
   methods: openArray[string],
-  pattern: T,
+  pattern: string | Regex,
   callback: proc (request: Request): Future[void] {.closure, gcsafe.}) =
 
   for `method` in methods:
@@ -540,52 +540,52 @@ proc addRoute[T: string|Regex](
 
     server.routes[httpMethods[`method`]].add(initRouteAttributes(pattern, callback))
 
-proc get*[T: string|Regex](
+proc get*(
   server: AsyncFCGIServer,
-  pattern: T,
+  pattern: string | Regex,
   callback: proc (request: Request): Future[void] {.closure, gcsafe.}
 ) = server.addRoute(@["GET"], pattern, callback)
 
-proc post*[T: string|Regex](
+proc post*(
   server: AsyncFCGIServer,
-  pattern: T,
+  pattern: string | Regex,
   callback: proc (request: Request): Future[void] {.closure, gcsafe.}
 ) = server.addRoute(@["POST"], pattern, callback)
 
-proc put*[T: string|Regex](
+proc put*(
   server: AsyncFCGIServer,
-  pattern: T,
+  pattern: string | Regex,
   callback: proc (request: Request): Future[void] {.closure, gcsafe.}
 ) = server.addRoute(@["PUT"], pattern, callback)
 
-proc patch*[T: string|Regex](
+proc patch*(
   server: AsyncFCGIServer,
-  pattern: T,
+  pattern: string | Regex,
   callback: proc (request: Request): Future[void] {.closure, gcsafe.}
 ) = server.addRoute(@["PATCH"], pattern, callback)
 
-proc delete*[T: string|Regex](
+proc delete*(
   server: AsyncFCGIServer,
-  pattern: T,
+  pattern: string | Regex,
   callback: proc (request: Request): Future[void] {.closure, gcsafe.}
 ) = server.addRoute(@["DELETE"], pattern, callback)
 
-proc options*[T: string|Regex](
+proc options*(
   server: AsyncFCGIServer,
-  pattern: T,
+  pattern: string | Regex,
   callback: proc (request: Request): Future[void] {.closure, gcsafe.}
 ) = server.addRoute(@["OPTIONS"], pattern, callback)
 
-proc any*[T: string|Regex](
+proc any*(
   server: AsyncFCGIServer,
-  pattern: T,
+  pattern: string | Regex,
   callback: proc (request: Request): Future[void] {.closure, gcsafe.}
 ) = server.addRoute(toSeq(httpMethods.keys), pattern, callback)
 
-proc match*[T: string|Regex](
+proc match*(
   server: AsyncFCGIServer,
   methods: openArray[string],
-  pattern: T,
+  pattern: string | Regex,
   callback: proc (request: Request): Future[void] {.closure, gcsafe.}
 ) = server.addRoute(methods.map(toUpperAscii), pattern, callback)
 
