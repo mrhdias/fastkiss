@@ -17,6 +17,10 @@ proc main() =
     await req.response("Hello $1!" % req.regexCaptures[0])
   )
 
+  app.match(["GET", "POST"], "/which", proc (req: Request) {.async.} =
+    await req.response("Hello $1!" % $req.reqMethod)
+  )
+
   app.run()
 
 main()
