@@ -25,8 +25,8 @@ type
 type
   AsyncSessions* = ref object of RootObj
     pool*: OrderedTableRef[string, Session]
-    sessionTimeout: int
-    sleepTime: int
+    sessionTimeout: int # seconds
+    sleepTime: int # milliseconds
     maxSessions*: int
 
 proc sessionsManager(self: AsyncSessions): Future[void] {.async.} =
