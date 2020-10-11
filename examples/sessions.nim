@@ -10,16 +10,12 @@ from strformat import `&`
 from cookies import parseCookies
 import sugar
 
-
 proc getSessionId(headers: HttpHeaders): string = 
   if not headers.hasKey("cookie"):
     return ""
 
   let cookies = parseCookies(headers["cookie"])
-  if "session" in cookies:
-    return cookies["session"]
-
-  return ""
+  return if "session" in cookies: cookies["session"] else: ""
 
 
 proc showSessionPage(
