@@ -58,8 +58,8 @@ proc showSessionPage(
 proc main() =
 
   let sessions = newAsyncSessions(
-    sleepTime=1000,
-    sessionTimeout=30
+    sleepTime=1000, # milliseconds
+    sessionTimeout=30 # seconds
   )
 
   let app = newAsyncFCGIServer()
