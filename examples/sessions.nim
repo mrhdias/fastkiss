@@ -5,36 +5,42 @@
 #
 import fastkiss
 import fastkiss/asyncsessions
-import re
 from strutils import `%`
 from strformat import `&`
 from cookies import parseCookies
 import sugar
 
+
+proc getSessionId(headers: HttpHeaders): string = 
+  if not headers.hasKey("cookie"):
+    return ""
+
+  let cookies = parseCookies(headers["cookie"])
+  if "session" in cookies:
+    return cookies["session"]
+
+  return ""
+
+
 proc showSessionPage(
   req: Request,
   sessions: AsyncSessions) {.async.} =
 
-  var id = ""
-  if req.headers.hasKey("cookie"):
-    let cookies = parseCookies(req.headers["cookie"])
-    if cookies.hasKey("session"):
-      id = cookies["session"]
+  let sessionId = req.headers.getSessionId()
+  if sessionId != "" and (sessionId in sessions.pool):
+    if (let session = sessions.getSession(sessionId); session) != nil:
+      await req.response(
+        &"""Hello User {session.map["username"]} Again :-) {sessionId}""",
+        newHttpHeaders([
+          ("content-type", "text/plain;charset=utf-8")
+        ]),
+        200
+      )
+      # sessions.delSession(sessionId)
+    else:
+      await req.response("Session Error!")
 
-    if id != "" and (id in sessions.pool):
-      if (let session = sessions.get_session(id); session) != nil:
-        await req.response(
-          &"""Hello User {session.map["username"]} Again :-) {id}""",
-          newHttpHeaders([
-            ("content-type", "text/plain;charset=utf-8")
-          ]),
-          200
-        )
-        # sessions.delSession(id)
-      else:
-        await req.response("Session Error!")
-
-      return
+    return
 
   proc timeoutSession(id: string) {.async.} =
     echo "expired session: ", id
