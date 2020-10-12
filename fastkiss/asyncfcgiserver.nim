@@ -558,6 +558,12 @@ proc put*(
   callback: proc (request: Request): Future[void] {.closure, gcsafe.}
 ) = server.addRoute(@["PUT"], pattern, callback)
 
+proc head*(
+  server: AsyncFCGIServer,
+  pattern: string | Regex,
+  callback: proc (request: Request): Future[void] {.closure, gcsafe.}
+) = server.addRoute(@["HEAD"], pattern, callback)
+
 proc patch*(
   server: AsyncFCGIServer,
   pattern: string | Regex,
@@ -575,6 +581,18 @@ proc options*(
   pattern: string | Regex,
   callback: proc (request: Request): Future[void] {.closure, gcsafe.}
 ) = server.addRoute(@["OPTIONS"], pattern, callback)
+
+proc connect*(
+  server: AsyncFCGIServer,
+  pattern: string | Regex,
+  callback: proc (request: Request): Future[void] {.closure, gcsafe.}
+) = server.addRoute(@["CONNECT"], pattern, callback)
+
+proc trace*(
+  server: AsyncFCGIServer,
+  pattern: string | Regex,
+  callback: proc (request: Request): Future[void] {.closure, gcsafe.}
+) = server.addRoute(@["TRACE"], pattern, callback)
 
 proc any*(
   server: AsyncFCGIServer,
