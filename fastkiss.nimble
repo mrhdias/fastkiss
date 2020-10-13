@@ -12,4 +12,4 @@ skipDirs = @["examples", "tests"]
 requires "nim >= 1.2.6"
 
 task test, "Test Asynfastcgiserver":
-  exec "nim c -r -d:release -d:usestd tests/server.nim"
+  exec "nim c -r -d:release -d:usestd tests/app.nim"
