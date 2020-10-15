@@ -22,11 +22,11 @@ const
   username = "test"
   password = "mytest"
 
-var stop = false
+# https://nim-lang.org/docs/system.html#Exception
+type EKeyboardInterrupt = object of Defect
 
 setControlCHook(proc() {.noconv.} =
-  stop = true
-  echo "Start the server shutdown ..."
+  raise newException(EKeyboardInterrupt, "Keyboard Interrupt")
 )
 
 proc validatePrice(price: string): bool =
@@ -208,19 +208,6 @@ proc connect2db(): Future[Connection] {.async.} =
     quit(QuitFailure)
 
 
-proc shutdown(
-  ap: AsyncFCGIServer,
-  dbConn: Connection) {.async.} =
-
-  while true:
-    if stop:
-      await dbConn.close()
-      ap.close()
-      echo "Server shutdown completed! Bye-Bye Kisses :)"
-      quit(QuitSuccess)
-    await sleepAsync(1000)
-
-
 proc main() {.async.} =
 
   let dbConn = await connect2db()
@@ -234,9 +221,14 @@ proc main() {.async.} =
   app.post("/add", (req: Request) => addProduct(req, dbConn))
   app.post("/del", (req: Request) => delProduct(req, dbConn))
 
-  # Catch ctrl-c
-  asyncCheck app.shutdown(dbConn)
-
-  app.run()
+  try:
+    app.run()
+  except EKeyboardInterrupt: # Catch ctrl-c
+    echo "Start the server shutdown ..."
+  finally:
+    await dbConn.close()
+    app.close()
+    echo "Server shutdown completed! Bye-Bye Kisses :)"
+    quit(QuitSuccess)
 
 waitFor main()
