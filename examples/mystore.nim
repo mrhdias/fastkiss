@@ -15,6 +15,7 @@ import fastkiss
 import sugar
 import amysql
 import strutils
+import system/ansi_c
 
 const
   dbname = "MyStore"
@@ -22,12 +23,6 @@ const
   username = "test"
   password = "mytest"
 
-# https://nim-lang.org/docs/system.html#Exception
-type EKeyboardInterrupt = object of Defect
-
-setControlCHook(proc() {.noconv.} =
-  raise newException(EKeyboardInterrupt, "Keyboard Interrupt")
-)
 
 proc validatePrice(price: string): bool =
   if price.len == 0: return false
@@ -217,18 +212,18 @@ proc main() {.async.} =
   let app = newAsyncFCGIServer()
   app.config.port = 9000 # optional if default port
 
+  # Catch ctrl-c
+  addSignal(SIGINT, proc(fd: AsyncFD): bool =
+    asyncCheck dbConn.close()
+    app.close()
+    echo "App shutdown completed! Bye-Bye Kisses :)"
+    quit(QuitSuccess)
+  )
+
   app.get("/", (req: Request) => showProducts(req, dbConn))
   app.post("/add", (req: Request) => addProduct(req, dbConn))
   app.post("/del", (req: Request) => delProduct(req, dbConn))
 
-  try:
-    app.run()
-  except EKeyboardInterrupt: # Catch ctrl-c
-    echo "Start the server shutdown ..."
-  finally:
-    await dbConn.close()
-    app.close()
-    echo "Server shutdown completed! Bye-Bye Kisses :)"
-    quit(QuitSuccess)
+  app.run()
 
 waitFor main()
