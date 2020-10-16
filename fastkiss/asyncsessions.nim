@@ -53,7 +53,7 @@ proc setSession*(self: AsyncSessions): Session =
   return (self.pool[$sessionId] = Session(
     id: sessionId,
     map: newStringTable(),
-    request_time: now(),
+    requestTime: now(),
     callback: nil
   ); self.pool[sessionId])
 
@@ -61,7 +61,7 @@ proc setSession*(self: AsyncSessions): Session =
 proc getSession*(self: AsyncSessions, id: string): Session =
   var tmp: Session
   if self.pool.pop(id, tmp):
-    tmp.request_time = now()
+    tmp.requestTime = now()
     self.pool[id] = tmp
     return self.pool[id]
 
