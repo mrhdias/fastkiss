@@ -1,5 +1,7 @@
-# FastKiss - [Nim](https://www.nim-lang.org)'s FastCGI Web Framework
+# FastKiss - A FastCGI Web Framework for Nim
 ⚠️ WARNING: This library is still in heavy development. ⚠️
+
+FastKiss is an FastCGI Host/Server Framework for [Nim](https://www.nim-lang.org) Web Applications. It was developed against Nginx, but should work with any web server that implements the FCGI spec.
 ```nim
 import fastkiss
 import re
