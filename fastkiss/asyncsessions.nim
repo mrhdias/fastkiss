@@ -63,7 +63,8 @@ proc sessionsManager(self: AsyncSessions): Future[void] {.async.} =
 
 
 proc setSession*(self: AsyncSessions): Session =
-
+  ## Create a new Session.
+  ##
   if self.pool.len == self.maxSessions:
     raise newException(AsyncSessionsError, "Maximum number of sessions exceeded!")
 
@@ -81,7 +82,8 @@ proc setSession*(self: AsyncSessions): Session =
 
 
 proc getSession*(self: AsyncSessions, id: string): Session =
-
+  ## Get Session Id if exists.
+  ##
   if id in self.pool:
     self.pool[id].requestTime = now()
     return self.pool[id]
@@ -97,6 +99,8 @@ proc delSession*(self: AsyncSessions, id: string) =
 
 
 proc cleanAll*(self: AsyncSessions) =
+  ## Clean all sessions
+  ##
   self.pool.clear()
   self.circularQueue = @[]
 
@@ -116,3 +120,26 @@ proc newAsyncSessions*(
   result.circularQueue = @[]
 
   asyncCheck result.sessionsManager()
+
+when not defined(testing) and isMainModule:
+
+  let sessions = newAsyncSessions(
+    sleepTime = 1000, # milliseconds
+    sessionTimeout = 30, # seconds
+    maxSessions = 1
+  )
+
+  proc timeoutSession(id: string) {.async.} =
+    echo "expired session: ", id
+
+  let session = sessions.setSession()
+  echo "session id: ", session.id
+  session.map["username"] = "Kiss"
+  session.callback = timeoutSession
+
+  let sessionStored = sessions.getSession(session.id)
+  echo "username: ", sessionStored.map["username"]
+
+  echo "Wait the session expire..."
+
+  runForever()
