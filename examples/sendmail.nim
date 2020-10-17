@@ -4,7 +4,6 @@
 # http://example:8080/sendmail
 #
 import fastkiss
-import fastkiss/utils
 import smtp
 import re
 import strutils
