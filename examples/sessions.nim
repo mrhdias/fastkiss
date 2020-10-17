@@ -9,6 +9,8 @@ from strutils import `%`
 from strformat import `&`
 from cookies import parseCookies
 import sugar
+import system/ansi_c
+
 
 proc getSessionId(headers: HttpHeaders): string = 
   if not headers.hasKey("cookie"):
@@ -41,7 +43,13 @@ proc showSessionPage(
   proc timeoutSession(id: string) {.async.} =
     echo "expired session: ", id
 
-  var session = sessions.setSession()
+  var session: Session
+  try:
+    session = sessions.setSession()
+  except AsyncSessionsError as e:
+    await req.response(e.msg)
+    return
+
   session.map["username"] = "Kiss"
   session.callback = timeoutSession
 
@@ -58,12 +66,21 @@ proc showSessionPage(
 proc main() =
 
   let sessions = newAsyncSessions(
-    sleepTime=1000, # milliseconds
-    sessionTimeout=30 # seconds
+    sleepTime = 1000, # milliseconds
+    sessionTimeout = 30, # seconds
+    maxSessions = 100
   )
 
   let app = newAsyncFCGIServer()
   app.config.port = 9000 # optional if default port
+
+ # Catch ctrl-c
+  addSignal(SIGINT, proc(fd: AsyncFD): bool =
+    sessions.cleanAll()
+    app.close()
+    echo "App shutdown completed! Bye-Bye Kisses :)"
+    quit(QuitSuccess)
+  )
 
   # app.get("/sessions", proc (req: Request): Future[void] = showSessionPage(req, sessions))
   # with sugar module
