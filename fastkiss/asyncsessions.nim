@@ -16,7 +16,7 @@ from md5 import toMD5, `$`
 export strtabs
 
 type
-  Session = ref object
+  Session* = ref object
     id*: string
     map*: StringTableRef
     requestTime: DateTime
@@ -24,54 +24,81 @@ type
 
 type
   AsyncSessions* = ref object of RootObj
-    pool*: OrderedTableRef[string, Session]
+    pool*: TableRef[string, Session]
     sessionTimeout: int # seconds
     sleepTime: int # milliseconds
     maxSessions*: int
+    circularQueue: seq[string]
+
+type
+  AsyncSessionsError* = object of CatchableError
+
+proc isDead(requestTime: DateTime, sessionTimeout: int): bool =
+  if (now() - requestTime).inSeconds > sessionTimeout: true else: false
+
 
 proc sessionsManager(self: AsyncSessions): Future[void] {.async.} =
   while true:
     await sleepAsync(self.sleepTime)
 
-    if self.pool == nil:
+    if self.circularQueue.len == 0:
       continue
 
-    # echo "Number of active sessions: ", self.pool.len
-    # echo "check the oldest session id for session timeout..."
-    for key, value in self.pool:
-      if (now() - self.pool[key].requestTime).inSeconds > self.sessionTimeout:
-        # echo "session id timeout: ", key
-        if self.pool[key].callback != nil:
-          await self.pool[key].callback(key)
-        self.pool.del(key)
-      break
+    # echo "Number of active sessions on the queue: ", self.circularQueue.len
+    # echo "Number of active sessions on the pool: ", self.pool.len
+
+    let key = self.circularQueue[0]
+    self.circularQueue.delete(0)
+
+    if key notin self.pool:
+      continue
+
+    if isDead(self.pool[key].requestTime, self.sessionTimeout):
+      # echo "session id timeout: ", key
+      if self.pool[key].callback != nil:
+        await self.pool[key].callback(key)
+      self.pool.del(key)
+    else:
+      self.circularQueue.add(key)
 
 
 proc setSession*(self: AsyncSessions): Session =
+
+  if self.pool.len == self.maxSessions:
+    raise newException(AsyncSessionsError, "Maximum number of sessions exceeded!")
+
   let sessionId = $toMD5($genOid())
 
-  return (self.pool[$sessionId] = Session(
+  self.pool[sessionId] = Session(
     id: sessionId,
     map: newStringTable(),
     requestTime: now(),
     callback: nil
-  ); self.pool[sessionId])
+  )
+  self.circularQueue.add(sessionId)
+
+  return self.pool[sessionId]
 
 
 proc getSession*(self: AsyncSessions, id: string): Session =
-  var tmp: Session
-  if self.pool.pop(id, tmp):
-    tmp.requestTime = now()
-    self.pool[id] = tmp
+
+  if id in self.pool:
+    self.pool[id].requestTime = now()
     return self.pool[id]
 
-  return tmp
+  return Session()
+
 
 proc delSession*(self: AsyncSessions, id: string) =
   ## Delete Session Id if exists.
   ##
   if self.pool.hasKey(id):
     self.pool.del(id)
+
+
+proc cleanAll*(self: AsyncSessions) =
+  self.pool.clear()
+  self.circularQueue = @[]
 
 
 proc newAsyncSessions*(
@@ -84,6 +111,8 @@ proc newAsyncSessions*(
   new result
   result.sleepTime = sleepTime
   result.sessionTimeout = sessionTimeout
-  result.pool = newOrderedTable[string, Session]()
+  result.maxSessions = maxSessions
+  result.pool = newTable[string, Session]()
+  result.circularQueue = @[]
 
   asyncCheck result.sessionsManager()
