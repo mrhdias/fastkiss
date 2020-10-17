@@ -148,10 +148,10 @@ proc processHeader(rawHeaders: seq[string]): Future[(string, Table[string, strin
 
   var formdata = initTable[string, string]()
   if filename.len > 0 or contentType.len > 0:
-    formdata.add("filename", filename)
-    formdata.add("content-type", contentType)
+    formdata["filename"] = filename
+    formdata["content-type"] = contentType
   else:
-    formdata.add("data", "")
+    formdata["data"] = ""
 
   # echo ">> Form Data: " & $formdata
 
@@ -287,7 +287,7 @@ proc parse*(self: AsyncHttpBodyParser, headers: HttpHeaders) =
                 formname = name
                 if form.hasKey("filename"):
                   var fileattr = initFileAttributes(form)
-                  self.body.formfiles.add(name, fileattr)
+                  self.body.formfiles[name] = fileattr
                   discard existsOrCreateDir(uploadDirectory)
 
                   if form.hasKey("content-type"):
@@ -299,7 +299,7 @@ proc parse*(self: AsyncHttpBodyParser, headers: HttpHeaders) =
                     output = openAsync(fullpath, fmWrite)
 
                 else:
-                  self.body.formdata.add(name, form["data"])
+                  self.body.formdata[name] = form["data"]
 
                 rawHeaders.setLen(0)
                 continue
@@ -351,13 +351,13 @@ proc parse*(self: AsyncHttpBodyParser, headers: HttpHeaders) =
           let (key, value) = getPair(name, buffer)
           if key.len > 0:
             # echo "0 - Key: ", key, " Value: ", value
-            self.body.formdata.add(key, value)
+            self.body.formdata[key] = value
           name = ""
           buffer = ""
           continue
 
         if name.len > 0 and c == '&':
-          self.body.formdata.add(name, buffer)
+          self.body.formdata[name] = buffer
           name = ""
           buffer = ""
           continue
@@ -390,7 +390,7 @@ proc parse*(self: AsyncHttpBodyParser, headers: HttpHeaders) =
       let (key, value) = getPair(name, buffer)
       if key.len > 0:
         # echo "1 - Key: ", key, " Value: ", value
-        self.body.formdata.add(key, value)
+        self.body.formdata[key] = value
 
     self.onData = onData
 
@@ -403,7 +403,6 @@ proc parse*(self: AsyncHttpBodyParser, headers: HttpHeaders) =
         self.body.data.add(data)
 
     self.onData = onData
-
 
 
 proc newAsyncHttpBodyParser*(): AsyncHttpBodyParser =
