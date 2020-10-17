@@ -1,4 +1,4 @@
-# FastKiss - Nim's FastCGI Web Framework
+# FastKiss - [Nim's](https://www.nim-lang.org) FastCGI Web Framework
 ⚠️ WARNING: This library is still in heavy development. ⚠️
 ```nim
 import fastkiss
