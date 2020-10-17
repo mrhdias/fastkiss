@@ -5,7 +5,7 @@
 #    See the file "copying.txt", included in this
 #    distribution, for details about the copyright.
 #
-from os import getFileSize, `/`, existsDir, existsFile,
+from os import getFileSize, `/`, dirExists, fileExists,
   removeDir, getTempDir, getEnv
 import asyncnet, asyncdispatch, asyncfile
 import httpcore
@@ -285,10 +285,10 @@ proc fileserver*(req: Request, staticDir=""): Future[void] {.async.} =
   url_path = if url_path.len > 1 and url_path[0] == '/': url_path[1 .. ^1] else: "index.html"
   var path = static_dir / url_path
 
-  if existsDir(path):
+  if dirExists(path):
     path = path / "index.html"
 
-  if existsFile(path):
+  if fileExists(path):
     await req.sendFile(path)
     return
 
@@ -467,7 +467,7 @@ proc processClient(
 
           # Clear the temporary directory here if auto clean
           if server.config.autoCleanTmpUploadDir and
-              existsDir(bodyParser.workingDir) and
+              dirExists(bodyParser.workingDir) and
               bodyParser.workingDir != server.config.tmpUploadDir:
 
             removeDir(bodyParser.workingDir)
@@ -479,7 +479,7 @@ proc processClient(
         # begin serve static files
         if (req.reqMethod == HttpGet) and
           (server.config.staticDir != "") and
-            existsDir(server.config.staticDir):
+            dirExists(server.config.staticDir):
           echo "serve static file"
           await req.fileserver(server.config.staticDir)
           return
@@ -536,7 +536,7 @@ proc addRoute(
       continue
 
     if not server.routes.hasKey(httpMethods[`method`]):
-      server.routes.add(httpMethods[`method`], newSeq[RouteAttributes]())
+      server.routes[httpMethods[`method`]] = newSeq[RouteAttributes]()
 
     server.routes[httpMethods[`method`]].add(initRouteAttributes(pattern, callback))
 
