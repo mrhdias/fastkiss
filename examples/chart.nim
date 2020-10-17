@@ -4,7 +4,6 @@
 # http://example:8080/
 #
 import fastkiss
-import re
 from strutils import `%`, split, parseFloat
 import asyncfile
 import json
