@@ -6,6 +6,35 @@
 #    distribution, for details about the copyright.
 #
 
+## This module implements a asynchronous sessions management.
+##
+## Basic usage
+## ===========
+##
+## This example will create an asynchronous session.
+## 
+## .. code-block::nim
+## let sessions = newAsyncSessions(
+##   sleepTime = 1000, # milliseconds
+##   sessionTimeout = 30, # seconds
+##   maxSessions = 100
+## )
+##
+##  proc timeoutSession(id: string) {.async.} =
+##    echo "expired session: ", id
+##
+##  let session = sessions.setSession()
+##  echo "session id: ", session.id
+##  session.map["username"] = "Test"
+##  session.callback = timeoutSession
+##
+##  let sessionStored = sessions.getSession(session.id)
+##  echo "username: ", sessionStored.map["username"]
+##
+##  echo "Wait the session expires..."
+##
+##  runForever()
+ 
 import asyncdispatch
 import strtabs
 import tables
@@ -25,9 +54,9 @@ type
 type
   AsyncSessions* = ref object of RootObj
     pool*: TableRef[string, Session]
-    sessionTimeout: int # seconds
-    sleepTime: int # milliseconds
-    maxSessions*: int
+    sessionTimeout: int ## Session timeout in seconds
+    sleepTime: int ## Time between check for dead sessions in milliseconds
+    maxSessions*: int ## The maximum number the sessions allowed.
     circularQueue: seq[string]
 
 type
@@ -134,12 +163,12 @@ when not defined(testing) and isMainModule:
 
   let session = sessions.setSession()
   echo "session id: ", session.id
-  session.map["username"] = "Kiss"
+  session.map["username"] = "Test"
   session.callback = timeoutSession
 
   let sessionStored = sessions.getSession(session.id)
   echo "username: ", sessionStored.map["username"]
 
-  echo "Wait the session expire..."
+  echo "Wait the session expires..."
 
   runForever()
