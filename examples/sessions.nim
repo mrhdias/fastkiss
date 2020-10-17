@@ -74,7 +74,7 @@ proc main() =
   let app = newAsyncFCGIServer()
   app.config.port = 9000 # optional if default port
 
- # Catch ctrl-c
+  # Catch ctrl-c
   addSignal(SIGINT, proc(fd: AsyncFD): bool =
     sessions.cleanAll()
     app.close()
