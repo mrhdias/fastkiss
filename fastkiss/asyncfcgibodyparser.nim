@@ -13,6 +13,9 @@ import httpcore
 from strutils import isDigit, parseInt, `%`, intToStr,
   rsplit, split, startsWith, removeSuffix, fromHex
 from strformat import `&`
+import formtable
+
+export formtable
 
 type
   FileAttributes* = object
@@ -20,9 +23,9 @@ type
     content_type*: string
     filesize*: BiggestInt
 
-  BodyData* = object
-    formdata*: Table[string, string]
-    formfiles*: Table[string, FileAttributes]
+  BodyData* = ref object
+    formdata*: FormTableRef[string, string]
+    formfiles*: FormTableRef[string, FileAttributes]
     data*: string
     multipart*: bool
 
@@ -172,6 +175,12 @@ proc getBoundary(contentType: string): string =
 proc parse*(self: AsyncHttpBodyParser, headers: HttpHeaders) =
   echo "Begin Body"
 
+  template formFiles(): FormTableRef[string, FileAttributes] =
+    self.body.formfiles
+
+  template formData(): FormTableRef[string, string] =
+    self.body.formdata
+
   if not (headers.hasKey("content_type") and headers.hasKey("content_length") and (parseInt(headers["content_length"]) > 0)):
     return
 
@@ -241,15 +250,21 @@ proc parse*(self: AsyncHttpBodyParser, headers: HttpHeaders) =
                 bag.add(buffer[0 .. diff - 1])
 
               if bag.len > 0:
-                if self.body.formfiles.hasKey(formname) and self.body.formfiles[formname].filename.len > 0:
+                if formFiles.hasKey(formname) and
+                    formFiles.len(formname) > 0 and
+                    formFiles.last(formname).filename.len > 0:
                   await output.write(bag)
-                elif self.body.formdata.hasKey(formname):
-                  self.body.formdata[formname].add(bag)
+                elif formData.hasKey(formname):
+                  ### add values to sequence
+                  formData[formname] = bag
                 bag = ""
 
-              if self.body.formfiles.hasKey(formname) and self.body.formfiles[formname].filename.len > 0:
+              if formFiles.hasKey(formname) and
+                  formFiles.len(formname) > 0 and
+                  formFiles.last(formname).filename.len > 0:
                 output.close()
-                self.body.formfiles[formname].filesize = getFileSize(uploadDirectory / self.body.formfiles[formname].filename)
+                # looking inside sequence files for the last insertion
+                formFiles.table[formname][^1].filesize = getFileSize(uploadDirectory / formFiles.table[formname][^1].filename)
 
               findHeaders = true # next move find the headers or stop if find "--"
               readContent = false
@@ -287,19 +302,23 @@ proc parse*(self: AsyncHttpBodyParser, headers: HttpHeaders) =
                 formname = name
                 if form.hasKey("filename"):
                   var fileattr = initFileAttributes(form)
-                  self.body.formfiles[name] = fileattr
+                  if name notin formFiles:
+                    formFiles[name] = newSeq[FileAttributes]()
+                  formFiles[name] = fileattr
                   discard existsOrCreateDir(uploadDirectory)
 
                   if form.hasKey("content-type"):
-                    self.body.formfiles[formname].content_type = form["content-type"]
+                    formFiles.table[formname][^1].content_type = form["content-type"]
 
                   var filename = form["filename"]
                   if (let fullpath = testFilename(uploadDirectory, filename); fullpath.len) > 0:
-                    self.body.formfiles[formname].filename = filename
+                    formFiles.table[formname][^1].filename = filename
                     output = openAsync(fullpath, fmWrite)
 
                 else:
-                  self.body.formdata[name] = form["data"]
+                  ### check if form["data"] is always empty
+                  if name notin formData:
+                    formData[name] = newSeq[string]()
 
                 rawHeaders.setLen(0)
                 continue
@@ -351,13 +370,13 @@ proc parse*(self: AsyncHttpBodyParser, headers: HttpHeaders) =
           let (key, value) = getPair(name, buffer)
           if key.len > 0:
             # echo "0 - Key: ", key, " Value: ", value
-            self.body.formdata[key] = value
+            formData[key] = value
           name = ""
           buffer = ""
           continue
 
         if name.len > 0 and c == '&':
-          self.body.formdata[name] = buffer
+          formData[name] = buffer
           name = ""
           buffer = ""
           continue
@@ -390,7 +409,7 @@ proc parse*(self: AsyncHttpBodyParser, headers: HttpHeaders) =
       let (key, value) = getPair(name, buffer)
       if key.len > 0:
         # echo "1 - Key: ", key, " Value: ", value
-        self.body.formdata[key] = value
+        formData[key] = value
 
     self.onData = onData
 
@@ -405,6 +424,14 @@ proc parse*(self: AsyncHttpBodyParser, headers: HttpHeaders) =
     self.onData = onData
 
 
+proc newBodyData(): BodyData =
+  new result
+  result.formdata = newFormTable[string, string]()
+  result.formfiles = newFormTable[string, FileAttributes]()
+  result.multipart = false
+  result.data = ""
+
+
 proc newAsyncHttpBodyParser*(): AsyncHttpBodyParser =
 
   ## Creates a new ``AsyncHttpBodyParser`` instance.
@@ -413,7 +440,4 @@ proc newAsyncHttpBodyParser*(): AsyncHttpBodyParser =
   result.initialized = false
   result.workingDir = getTempDir()
   result.onData = nil
-  result.body.formdata = initTable[string, string]()
-  result.body.formfiles = initTable[string, FileAttributes]()
-  result.body.multipart = false
-  result.body.data = ""
+  result.body = newBodyData()
