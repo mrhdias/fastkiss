@@ -225,7 +225,7 @@ proc parse*(self: AsyncHttpBodyParser, headers: HttpHeaders) =
     var formname = ""
     var output: AsyncFile
 
-    echo "Multipart Form Data"
+    # if debug: echo "Multipart Form Data"
     proc onData(data: string) {.async.} =
       # if debug: echo "ON BODY MULTIPART..."
 
@@ -350,7 +350,7 @@ proc parse*(self: AsyncHttpBodyParser, headers: HttpHeaders) =
     self.onData = onData
 
   elif headers["content_type"] == "application/x-www-form-urlencoded":
-    echo "WWW Form Urlencoded"
+    # if debug: echo "WWW Form Urlencoded"
 
     var
       name = ""
