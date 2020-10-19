@@ -173,7 +173,7 @@ proc getBoundary(contentType: string): string =
 
 
 proc parse*(self: AsyncHttpBodyParser, headers: HttpHeaders) =
-  echo "Begin Body"
+  # if debug: echo "Begin Body"
 
   template formFiles(): FormTableRef[string, FileAttributes] =
     self.body.formfiles
@@ -184,7 +184,7 @@ proc parse*(self: AsyncHttpBodyParser, headers: HttpHeaders) =
   if not (headers.hasKey("content_type") and headers.hasKey("content_length") and (parseInt(headers["content_length"]) > 0)):
     return
 
-  echo "Content-Type: ", headers["content_type"]
+  # if debug: echo "Content-Type: ", headers["content_type"]
 
   if (headers["content_type"].len > 20) and
     (headers["content_type"][0 .. 19] == "multipart/form-data;"):
@@ -194,7 +194,7 @@ proc parse*(self: AsyncHttpBodyParser, headers: HttpHeaders) =
       return
 
     self.body.multipart = true
-    echo "Have Boundary"
+    # if debug: echo "Have Boundary"
     let uploadDirectory = self.workingDir
 
     proc initFileAttributes(form: Table[string, string]): FileAttributes =
@@ -227,7 +227,7 @@ proc parse*(self: AsyncHttpBodyParser, headers: HttpHeaders) =
 
     echo "Multipart Form Data"
     proc onData(data: string) {.async.} =
-      echo "ON BODY MULTIPART..."
+      # if debug: echo "ON BODY MULTIPART..."
 
       for c in data:
 
