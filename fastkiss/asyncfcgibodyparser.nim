@@ -38,6 +38,7 @@ type
 
   HttpBodyParserError* = object of ValueError
 
+# const debug = true
 
 proc splitHeader(s: string): array[2, string] =
   var p = find(s, ':')
