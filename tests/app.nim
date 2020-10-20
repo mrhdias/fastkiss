@@ -1,5 +1,5 @@
 import asyncdispatch
-import fastkiss
+import ../fastkiss
 
 var stop = false
 
