@@ -10,7 +10,7 @@ import re
 from strutils import `%`
 
 proc main() =
-  let app = newAsyncFCGIServer()
+  let app = newApp()
   app.config.port = 9000 # optional if default port
 
   app.get("/test", proc (req: Request) {.async.} =
