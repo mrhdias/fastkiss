@@ -245,7 +245,7 @@ proc sendFile(req: Request, filepath: string): Future[void] {.async.} =
   if ((let p = filepath.rfind('.')); p > -1):
     extension = filepath[p+1 .. ^1]
 
-  let payload = "status: 200 OK\c\Lcontent-type: $1\c\L\c\L" % mt.getMimetype(extension)
+  let payload = "status: 200 OK\c\Lcontent-type: $1\c\Lcontent-length: $2\c\L\c\L" % [mt.getMimetype(extension), $filesize]
 
   var header = initHeader(FCGI_STDOUT, req.id, payload.len, 0)
   await req.client.send(addr header, FCGI_HEADER_LENGTH)
@@ -480,7 +480,7 @@ proc processClient(
         if (req.reqMethod == HttpGet) and
           (server.config.staticDir != "") and
             dirExists(server.config.staticDir):
-          echo "serve static file"
+          # echo "serve static file"
           await req.fileserver(server.config.staticDir)
           return
         # end serve static files
