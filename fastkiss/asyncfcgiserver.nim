@@ -235,7 +235,7 @@ proc response*(req: Request, html: string) {.async.} =
 
 ### Begin File Server ###
 
-proc sendFile(req: Request, filepath: string): Future[void] {.async.} =
+proc sendFile*(req: Request, filepath: string): Future[void] {.gcsafe, async.} =
   let filesize = cast[int](getFileSize(filepath))
 
   # if filesize > high(int):
