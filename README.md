@@ -24,6 +24,10 @@ proc main() =
   app.match(["GET", "POST"], "/which", proc (req: Request) {.async.} =
     await req.response("Hello $1!" % $req.reqMethod)
   )
+  
+  app.get("/static", proc (req: Request) {.async.} =
+    await req.sendFile("./test.txt")
+  )
 
   app.run()
 
