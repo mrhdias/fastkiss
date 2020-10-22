@@ -258,28 +258,27 @@ proc sendFile*(req: Request, filepath: string): Future[void] {.async.} =
   var header = initHeader(FCGI_STDOUT, req.id, payload.len, 0)
   await req.client.send(addr header, FCGI_HEADER_LENGTH)
 
-  if payload.len > 0:
-    await req.client.send(payload.cstring, payload.len)
+  await req.client.send(payload.cstring, payload.len)
 
-    const chunkSize = 8*1024
-    var remainder = filesize
-    let file = openAsync(filepath, fmRead)
+  const chunkSize = 8*1024
+  var remainder = filesize
+  let file = openAsync(filepath, fmRead)
 
-    while remainder > 0:
-      let data = await file.read(min(remainder, chunkSize))
-      remainder -= data.len
+  while remainder > 0:
+    let data = await file.read(min(remainder, chunkSize))
+    remainder -= data.len
 
-      header.contentLengthB1 = uint8((data.len shr 8) and 0xff)
-      header.contentLengthB0 = uint8(data.len and 0xff)
+    header.contentLengthB1 = uint8((data.len shr 8) and 0xff)
+    header.contentLengthB0 = uint8(data.len and 0xff)
 
-      await req.client.send(addr header, FCGI_HEADER_LENGTH)
-      await req.client.send(data.cstring, data.len)
-
-    file.close()
-
-    header.contentLengthB1 = 0
-    header.contentLengthB0 = 0
     await req.client.send(addr header, FCGI_HEADER_LENGTH)
+    await req.client.send(data.cstring, data.len)
+
+  file.close()
+
+  header.contentLengthB1 = 0
+  header.contentLengthB0 = 0
+  await req.client.send(addr header, FCGI_HEADER_LENGTH)
 
   await req.sendEnd()
 
