@@ -139,8 +139,9 @@ type
     header*: Header
     body*: EndRequestBody
 
+var mt {.threadvar.}: MimeDB
+mt = newMimetypes()
 
-let mt = newMimetypes()
 
 proc initHeader(kind: HeaderKind, reqId: uint16, contentLength, paddingLenth: int): Header =
   result.version = FCGI_VERSION_1
@@ -164,13 +165,11 @@ proc initRequest(): Request =
   result.headers = newHttpHeaders()
 
 
-
 proc sendEnd*(req: Request, appStatus: int32 = 0, status = FCGI_REQUEST_COMPLETE) {.async.} =
   var record: EndRequestRecord
   record.header = initHeader(FCGI_END_REQUEST, req.id, sizeof(EndRequestBody), 0)
   record.body = initEndRequestBody(appStatus, status)
   await req.client.send(addr record, sizeof(record))
-
 
 
 proc response*(
@@ -235,7 +234,16 @@ proc response*(req: Request, html: string) {.async.} =
 
 ### Begin File Server ###
 
-proc sendFile*(req: Request, filepath: string): Future[void] {.gcsafe, async.} =
+proc sendFile*(req: Request, filepath: string): Future[void] {.async.} =
+
+  if not fileExists(filepath):
+    let headers = newHttpHeaders([
+      ("status", "404 not found"),
+      ("content-type", "text/plain")
+    ])
+    await req.response("404 Not Found", headers, appStatus=404)
+    return
+
   let filesize = cast[int](getFileSize(filepath))
 
   # if filesize > high(int):
@@ -288,15 +296,7 @@ proc fileserver*(req: Request, staticDir=""): Future[void] {.async.} =
   if dirExists(path):
     path = path / "index.html"
 
-  if fileExists(path):
-    await req.sendFile(path)
-    return
-
-  let headers = newHttpHeaders([
-    ("status", "404 not found"),
-    ("content-type", "text/plain")
-  ])
-  await req.response("404 Not Found", headers, appStatus=404)
+  await req.sendFile(path)
 
 ### End File Server ###
 
