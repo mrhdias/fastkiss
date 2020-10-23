@@ -267,11 +267,9 @@ proc sendFile*(req: Request, filepath: string): Future[void] {.async.} =
   while remainder > 0:
     let data = await file.read(min(remainder, chunkSize))
     remainder -= data.len
-
-    header.contentLengthB1 = uint8((data.len shr 8) and 0xff)
-    header.contentLengthB0 = uint8(data.len and 0xff)
-
-    await req.client.send(addr header, FCGI_HEADER_LENGTH)
+    # header.contentLengthB1 = uint8((data.len shr 8) and 0xff)
+    # header.contentLengthB0 = uint8(data.len and 0xff)
+    # await req.client.send(addr header, FCGI_HEADER_LENGTH)
     await req.client.send(data.cstring, data.len)
 
   file.close()
