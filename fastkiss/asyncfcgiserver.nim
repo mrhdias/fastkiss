@@ -457,6 +457,10 @@ proc processClient(
 
           return nil
 
+        # for compatibility between apache and nginx servers.
+        if not req.headers.hasKey("document_uri") and req.headers.hasKey("request_uri"):
+          req.headers["document_uri"] = req.headers["request_uri"].split("?", 1)[0]
+
         if server.routes.hasKey(req.reqMethod) and req.headers.hasKey("document_uri") and
           (let callback = routeCallback(server.routes[req.reqMethod], req.headers["document_uri"]); callback) != nil:
           req.body = bodyParser.body
