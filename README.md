@@ -88,7 +88,7 @@ Test
 $ nimble install https://github.com/mrhdias/fastkiss
 $ nano -w example.nim
 $ nim c -r example.nim
-$ sudo systemctl start nginx
+$ sudo systemctl start nginx / httpd
 $ wget -qO- http://example:8080/test
 Hello World!!⏎
 ```
