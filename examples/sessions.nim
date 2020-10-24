@@ -13,10 +13,10 @@ import system/ansi_c
 
 
 proc getSessionId(headers: HttpHeaders): string = 
-  if not headers.hasKey("cookie"):
+  if not headers.hasKey("http_cookie"):
     return ""
 
-  let cookies = parseCookies(headers["cookie"])
+  let cookies = parseCookies(headers["http_cookie"])
   return if "session" in cookies: cookies["session"] else: ""
 
 
