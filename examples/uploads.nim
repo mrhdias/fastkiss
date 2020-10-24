@@ -53,7 +53,7 @@ proc showResult(req: Request) {.async.} =
   webEcho.add "$1\c\L" % $formData["testfield-2"]
 
   for field in formData.allValues("testfield-2"):
-    webEcho.add "Input text of \"testfield-2\": $1c\L" % $field
+    webEcho.add "Input text of \"testfield-2\": $1\c\L" % $field
 
   webEcho.add "Number of input file with diferent names: $1\c\L" % $formFiles.len
   webEcho.add "$1\c\L" % $formFiles
