@@ -47,7 +47,7 @@ server {
 
   location / {
     fastcgi_param HTTP_COOKIE $http_cookie;
-    fastcgi_param Authorization $http_authorization;
+    fastcgi_param HTTP_AUTHORIZATION $http_authorization;
 
     client_max_body_size 1000M;
     include fastcgi_params;
