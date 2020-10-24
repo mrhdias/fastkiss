@@ -17,11 +17,11 @@ type
 
 proc getCredentials*(req: Request): Credentials =
 
-  if req.headers.hasKey("authorization") and
-      req.headers["authorization"].len() > 10 and
-      req.headers["authorization"].startsWith("Basic "):
+  if req.headers.hasKey("http_authorization") and
+      req.headers["http_authorization"].len() > 10 and
+      req.headers["http_authorization"].startsWith("Basic "):
 
-    let parts = req.headers["authorization"].splitWhitespace(maxsplit=1)
+    let parts = req.headers["http_authorization"].splitWhitespace(maxsplit=1)
 
     if parts.len() == 2 and parts[1].len() > 3:
       let credentials = decode(parts[1]).split(':', maxsplit=1)
