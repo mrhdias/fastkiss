@@ -46,7 +46,9 @@ server {
   #
 
   location / {
+    # Comment this line if you if you don't need http cookies
     fastcgi_param HTTP_COOKIE $http_cookie;
+    # Comment this line if you if you don't need Basic Autentication
     fastcgi_param HTTP_AUTHORIZATION $http_authorization;
 
     client_max_body_size 1000M;
@@ -78,6 +80,7 @@ LoadModule rewrite_module modules/mod_rewrite.so
   # Need a server with SSL support
   # Protocols h2 http/1.1
 
+  # Comment this two lines below if you if you don't need Basic Autentication
   RewriteEngine on
   RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 </VirtualHost>
