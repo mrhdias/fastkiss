@@ -48,7 +48,6 @@ the credentials required.</p>
 </html>
 """
   let headers = newHttpHeaders([
-    ("status", "401 Unauthorized"),
     ("WWW-Authenticate", "Basic realm=\"$1\"" % realm),
     ("content-length", $(htmlpage.len())),
     ("content-type", "text/html;charset=utf-8")
