@@ -216,7 +216,6 @@ proc response*(
 proc response*(req: Request, json: JsonNode) {.async.} =
   let content = $json
   let headers = newHttpHeaders([
-    ("status", "200 OK"),
     ("content-length", $(content.len())),
     ("content-type", "application/json")
   ])
@@ -225,20 +224,19 @@ proc response*(req: Request, json: JsonNode) {.async.} =
 
 proc response*(req: Request, html: string) {.async.} =
   let headers = newHttpHeaders([
-    ("status", "200 OK"),
     ("content-length", $(html.len())),
     ("content-type", "text/html;charset=utf-8")
   ])
   await req.response(html, headers, appStatus=200)
 
-
-### Begin File Server ###
+#
+# Begin File Server
+#
 
 proc sendFile*(req: Request, filepath: string): Future[void] {.async.} =
 
   if not fileExists(filepath):
     let headers = newHttpHeaders([
-      ("status", "404 not found"),
       ("content-type", "text/plain")
     ])
     await req.response("404 Not Found", headers, appStatus=404)
@@ -295,7 +293,9 @@ proc fileserver*(req: Request, staticDir=""): Future[void] {.async.} =
 
   await req.sendFile(path)
 
-### End File Server ###
+#
+# End File Server
+#
 
 #
 # proc cookies*(req: Request): Table[string, string] =
@@ -418,8 +418,7 @@ proc processClient(
       if (req.reqMethod == HttpPost) and (not bodyParser.initialized):
         if req.headers.hasKey("content_length") and parseInt(req.headers["content_length"]) > server.config.maxBody:
           let headers = newHttpHeaders([
-            ("status", "413 Payload Too Large"),
-            ("content-type", "text/plain;charset=utf-8")
+            ("content-type", "text/plain; charset=utf-8")
           ])
           await req.response("413 Payload Too Large", headers, appStatus=413)
           return
@@ -487,8 +486,7 @@ proc processClient(
         # end serve static files
 
         let headers = newHttpHeaders([
-          ("status", "404 not found"),
-          ("content-type", "text/plain")
+          ("content-type", "text/plain; charset=utf-8")
         ])
         await req.response("404 Not Found", headers, appStatus=404)
     else:
@@ -611,8 +609,6 @@ proc match*(
 #
 # End handle Methods
 #
-
-
 
 proc serve*(server: AsyncFCGIServer) {.async.} =
 
