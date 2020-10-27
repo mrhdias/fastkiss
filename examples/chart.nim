@@ -104,9 +104,8 @@ update_chart();
 """
   await req.response(html)
 
-
 proc main() =
-  let app = newAsyncFCGIServer()
+  let app = newApp()
   app.config.port = 9000
   app.config.staticDir = "static"
   
