@@ -33,7 +33,9 @@ proc main() =
 
 main()
 ```
-To send content in parts to the client use the "resp" function instead of "respond".
+If you are using FastKiss to generate dynamic content of significant size, such as large binary images or large text-based datasets, then you need to consider the use of "**resp**" function instead of "**respond**" to minimize the memory footprint and preserve scalability.
+
+Using "**resp**" function allows FastKiss to return chunks of data back to the client without the need to build an entire structure, or resource in-memory.
 ```nim
 import fastkiss
 import tables
