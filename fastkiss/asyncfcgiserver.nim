@@ -186,6 +186,21 @@ proc sendEnd*(req: Request, appStatus: int32 = 0, status = FCGI_REQUEST_COMPLETE
 # Begin One-shot Response
 #
 
+iterator getRange(chunkSize, dataLength: int): (int, int) =
+  var
+    beginPos = 0
+    endPos = chunkSize - 1
+
+  if chunkSize > 0 and dataLength > 0:
+    while endPos < dataLength:
+      yield (beginPos, endPos)
+      beginPos = endPos + 1
+      endPos = beginPos + chunkSize - 1
+
+    if beginPos < endPos:
+      yield (beginPos, dataLength - 1)
+
+
 proc respond*(req: Request, content = "") {.async.} =
   if req.response.parted:
     raise newException(IOError, "500 Internal Server Error")
@@ -195,29 +210,39 @@ proc respond*(req: Request, content = "") {.async.} =
   if not req.response.headers.hasKey("status"):
     req.response.headers.add("status", $HttpCode(req.response.statusCode))
 
-  if not req.response.headers.hasKey("content-length"):
-    req.response.headers.add("content-length", $(content.len))
-
   if not req.response.headers.hasKey("content-type"):
     req.response.headers.add("content-type", "text/html; charset=utf-8")
+
+  if not req.response.headers.hasKey("content-length"):
+    req.response.headers.add("content-length", $(content.len))
 
   for name, value in req.response.headers.pairs:
     payload.add(&"{name}: {value}\c\L")
 
-  # echo payload
+  payload.add(&"\c\L")
 
-  if content.len > 0:
-    payload.add(&"\c\L{content}")
+  # echo payload
 
   var header = initHeader(FCGI_STDOUT, req.id, payload.len, 0)
   await req.client.send(addr header, FCGI_HEADER_LENGTH)
 
-  # echo "Payload: ", payload
-  if payload.len > 0:
-    await req.client.send(payload.cstring, payload.len)
-    header.contentLengthB1 = 0
-    header.contentLengthB0 = 0
-    await req.client.send(addr header, FCGI_HEADER_LENGTH)
+  await req.client.send(payload.cstring, payload.len)
+
+  if content.len > 0:
+    # The content is read in chunks to avoid the error:
+    # net::ERR_CONTENT_LENGTH_MISMATCH 200 (OK) if big payloads
+    const chunkSize = 8*1024
+
+    for b, e in getRange(chunkSize, content.len):
+      let data = content[b .. e]
+      header.contentLengthB1 = uint8((data.len shr 8) and 0xff)
+      header.contentLengthB0 = uint8(data.len and 0xff)
+      await req.client.send(addr header, FCGI_HEADER_LENGTH)
+      await req.client.send(data.cstring, data.len)
+
+  header.contentLengthB1 = 0
+  header.contentLengthB0 = 0
+  await req.client.send(addr header, FCGI_HEADER_LENGTH)
 
   await req.sendEnd()
 
