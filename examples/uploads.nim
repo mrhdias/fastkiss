@@ -7,7 +7,6 @@ import fastkiss
 import tables
 from strutils import `%`
 
-
 template formFiles(): FormTableRef[string, FileAttributes] =
   req.body.formfiles
 
@@ -41,41 +40,33 @@ proc showPage(req: Request) {.async.} =
   </body>
 </html>
 """
-  await req.response(htmlpage)
+  await req.respond(htmlpage)
 
 proc showResult(req: Request) {.async.} =
 
-  var webEcho = ""
-  webEcho.add "$1\c\L" % $req
-  webEcho.add "Working Directory: $1\c\L" % $req.headers["working-directory"]
+  req.response.headers["content-type"] = "text/plain; charset=utf-8"
 
-  webEcho.add "$1\c\L" % $formData
-  webEcho.add "$1\c\L" % $formData["testfield-2"]
+  resp "$1\c\L" % $req
+  resp "Working Directory: $1\c\L" % $req.headers["working-directory"]
+
+  resp "$1\c\L" % $formData
+  resp "$1\c\L" % $formData["testfield-2"]
 
   for field in formData.allValues("testfield-2"):
-    webEcho.add "Input text of \"testfield-2\": $1\c\L" % $field
+    resp "Input text of \"testfield-2\": $1\c\L" % $field
 
-  webEcho.add "Number of input file with diferent names: $1\c\L" % $formFiles.len
-  webEcho.add "$1\c\L" % $formFiles
-  webEcho.add "Number of files with same input name \"testfile-2\": $1\c\L" % $formFiles.len("testfile-2")
-  webEcho.add "Filename: $1\c\L" % $formFiles["testfile-2"].filename
-  webEcho.add "Content Type: $1\c\L" % $formFiles["testfile-2"].content_type
-  webEcho.add "Filesize: $1\c\L" % $formFiles["testfile-2"].filesize
+  resp "Number of input file with diferent names: $1\c\L" % $formFiles.len
+  resp "$1\c\L" % $formFiles
+  resp "Number of files with same input name \"testfile-2\": $1\c\L" % $formFiles.len("testfile-2")
+  resp "Filename: $1\c\L" % $formFiles["testfile-2"].filename
+  resp "Content Type: $1\c\L" % $formFiles["testfile-2"].content_type
+  resp "Filesize: $1\c\L" % $formFiles["testfile-2"].filesize
 
   for file in formFiles.allValues("testfile-2"):
-    webEcho.add "File: $1\c\L" % $file
-
-  await req.response(
-    webEcho,
-    newHttpHeaders([
-      ("content-type", "text/plain;charset=utf-8")
-    ]),
-    200
-  )
-
+    resp "File: $1\c\L" % $file
 
 proc main() =
-  let app = newAsyncFCGIServer()
+  let app = newApp()
   app.config.port = 9000 # optional if default port
   app.config.autoCleanTmpUploadDir = true
 
