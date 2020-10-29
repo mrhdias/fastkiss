@@ -14,15 +14,15 @@ proc main() =
   app.config.port = 9000 # optional if default port
 
   app.get("/test", proc (req: Request) {.async.} =
-    await req.response("Hello World!")
+    await req.respond("Hello World!")
   )
 
   app.get(r"/test/(\w+)".re, proc (req: Request) {.async.} =
-    await req.response("Hello $1!" % req.regexCaptures[0])
+    await req.respond("Hello $1!" % req.regexCaptures[0])
   )
 
   app.match(["GET", "POST"], "/which", proc (req: Request) {.async.} =
-    await req.response("Hello $1!" % $req.reqMethod)
+    await req.respond("Hello $1!" % $req.reqMethod)
   )
   
   app.get("/static", proc (req: Request) {.async.} =
