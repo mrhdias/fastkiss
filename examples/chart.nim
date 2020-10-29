@@ -3,6 +3,8 @@
 # nim c -r chart.nim
 # http://example:8080/
 #
+# "respond(data: string | JsonNode)" is a shortcut for "await req.respond(data: string | JsonNode)"
+#
 import fastkiss
 from strutils import `%`, split, parseFloat
 import asyncfile
@@ -24,12 +26,10 @@ proc getData(req: Request) {.async.} =
     "status": "ok"
   }
 
-  await req.response(data)
+  respond data
 
 
-proc showPage(req: Request) {.async.} =
-
-  let html = """
+proc showPage(req: Request) {.async.} = """
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -101,8 +101,7 @@ update_chart();
     </script>
   </body>
 </html>
-"""
-  await req.response(html)
+  """.respond
 
 proc main() =
   let app = newApp()
