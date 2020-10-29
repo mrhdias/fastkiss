@@ -33,6 +33,44 @@ proc main() =
 
 main()
 ```
+To send content in parts to the client use the "resp" function instead of "respond".
+```nim
+import fastkiss
+import tables
+from strutils import `%`
+
+proc showPage(req: Request) {.async.} =
+
+  let t = {1: "one", 2: "two", 3: "three"}.toTable
+
+  """<!DOCTYPE html>
+  <html lang="en">
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width">
+      <title>Test</title>
+    </head>
+    <body>
+      <table>""".resp
+
+  for k, v in pairs(t):
+    resp """<tr>
+        <td><strong>$1</strong></td>
+        <td>$2</td>
+      </tr>
+    """ % [$k, v]
+
+  """</table>
+    </body>
+  </html>""".resp
+
+proc main() =
+  let app = newApp()
+  app.get("/", showPage)
+  app.run()
+
+main()
+```
 
 NGINX FastCGI Configuration File Example
 ```
