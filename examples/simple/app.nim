@@ -3,6 +3,8 @@
 # nim c -r app.nim
 # http://example:8080/
 #
+# "resp(data: string)" is a shortcut for "await req.resp(data: string)"
+#
 import fastkiss
 import asyncfile
 import os
@@ -20,18 +22,14 @@ proc fileGetContents(staticDir, filename: string): Future[string] {.async.} =
     return "$1: $2" % [e.msg, staticDir / filename]
 
 proc main() =
-  let app = newAsyncFCGIServer()
+  let app = newApp()
   app.config.port = 9000 # optional if default port
   app.config.staticDir = staticDir
 
   app.get("/", proc (req: Request) {.async.} =
-
-    var contents = ""
-    contents.add(await staticDir.fileGetContents("html/header.html"))
-    contents.add(await staticDir.fileGetContents("html/body.html"))
-    contents.add(await staticDir.fileGetContents("html/footer.html"))
-
-    await req.response(contents)
+    resp await staticDir.fileGetContents("html/header.html")
+    resp await staticDir.fileGetContents("html/body.html")
+    resp await staticDir.fileGetContents("html/footer.html")
   )
 
   app.run()
