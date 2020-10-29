@@ -14,8 +14,7 @@ template formData(): FormTableRef[string, string] =
   req.body.formdata
 
 
-proc showPage(req: Request) {.async.} =
-  let htmlpage = """
+proc showPage(req: Request) {.async.} = """
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -39,8 +38,7 @@ proc showPage(req: Request) {.async.} =
     </form>
   </body>
 </html>
-"""
-  await req.respond(htmlpage)
+""".respond
 
 proc showResult(req: Request) {.async.} =
 
