@@ -79,6 +79,10 @@ type
     READ_VALUE_DATA
     READ_FINISH
 
+  Response* = ref object
+    headers*: HttpHeaders
+    statusCode*: int32
+    parted: bool
 
   Request* = object
     id*: uint16
@@ -90,6 +94,7 @@ type
     regexCaptures*: array[20, string]
     body*: BodyData
     rawBody*: string
+    response*: Response
 
 type
   HeaderKind* = enum
@@ -160,9 +165,14 @@ proc initEndRequestBody*(appStatus: int32, status = FCGI_REQUEST_COMPLETE): EndR
   result.appStatusB0 = uint8((appStatus) and 0xff)
   result.protocolStatus = status.uint8
 
+
 proc initRequest(): Request =
   result.keepAlive = 0
   result.headers = newHttpHeaders()
+  result.response = new Response
+  result.response.headers = newHttpHeaders()
+  result.response.statusCode = 200
+  result.response.parted = false
 
 
 proc sendEnd*(req: Request, appStatus: int32 = 0, status = FCGI_REQUEST_COMPLETE) {.async.} =
@@ -172,24 +182,26 @@ proc sendEnd*(req: Request, appStatus: int32 = 0, status = FCGI_REQUEST_COMPLETE
   await req.client.send(addr record, sizeof(record))
 
 
-proc response*(
-  req: Request,
-  content = "",
-  headers: HttpHeaders,
-  appStatus: int32 = 0) {.async.} =
+#
+# Begin One Time Response
+#
+
+proc respond*(req: Request, content = "") {.async.} =
+  if req.response.parted:
+    raise newException(IOError, "500 Internal Server Error")
 
   var payload = ""
 
-  if not headers.hasKey("status"):
-    headers.add("status", $HttpCode(appStatus))
+  if not req.response.headers.hasKey("status"):
+    req.response.headers.add("status", $HttpCode(req.response.statusCode))
 
-  if not headers.hasKey("content-length"):
-    headers.add("content-length", $(content.len))
+  if not req.response.headers.hasKey("content-length"):
+    req.response.headers.add("content-length", $(content.len))
 
-  if not headers.hasKey("content-type"):
-    headers.add("content-type", "text/plain;charset=utf-8")
+  if not req.response.headers.hasKey("content-type"):
+    req.response.headers.add("content-type", "text/html; charset=utf-8")
 
-  for name, value in headers.pairs:
+  for name, value in req.response.headers.pairs:
     payload.add(&"{name}: {value}\c\L")
 
   # echo payload
@@ -213,21 +225,83 @@ proc response*(
     req.client.close()
 
 
-proc response*(req: Request, json: JsonNode) {.async.} =
+proc respond*(req: Request, json: JsonNode) {.async.} =
   let content = $json
-  let headers = newHttpHeaders([
-    ("content-length", $(content.len())),
-    ("content-type", "application/json")
-  ])
-  await req.response(content, headers, appStatus=200)
+  req.response.headers["content-type"] = "application/json"
+  req.response.headers["content-length"] = $(content.len())
+
+  await req.respond(content)
+
+#
+# Begin Response Parted
+#
+
+proc respBegin(req: Request, content = "") {.async.} =
+
+  if req.response.parted:
+    raise newException(IOError, "500 Internal Server Error")
+
+  var payload = ""
+
+  if not req.response.headers.hasKey("status"):
+    req.response.headers.add("status", $HttpCode(req.response.statusCode))
+
+  if req.response.headers.hasKey("content-length"):
+    req.response.headers.del("content-length")
+
+  if not req.response.headers.hasKey("content-type"):
+    req.response.headers.add("content-type", "text/plain; charset=utf-8")
+
+  for name, value in req.response.headers.pairs:
+    payload.add(&"{name}: {value}\c\L")
+
+  if content.len > 0:
+    payload.add(&"\c\L{content}")
+
+  var header = initHeader(FCGI_STDOUT, req.id, payload.len, 0)
+  header.contentLengthB1 = uint8((payload.len shr 8) and 0xff)
+  header.contentLengthB0 = uint8(payload.len and 0xff)
+  await req.client.send(addr header, FCGI_HEADER_LENGTH)
+
+  if payload.len > 0:
+    await req.client.send(payload.cstring, payload.len)
+
+  req.response.parted = true
 
 
-proc response*(req: Request, html: string) {.async.} =
-  let headers = newHttpHeaders([
-    ("content-length", $(html.len())),
-    ("content-type", "text/html;charset=utf-8")
-  ])
-  await req.response(html, headers, appStatus=200)
+proc resp*(req: Request, payload: string) {.async.} =
+  if not req.response.parted:
+    if not req.response.headers.hasKey("content-type"):
+      req.response.headers["content-type"] = "text/html; charset=utf-8"
+    req.response.statusCode = 200
+    await req.respBegin(payload)
+    return
+
+  if payload.len == 0:
+    return
+
+  var header = initHeader(FCGI_STDOUT, req.id, payload.len, 0)
+  header.contentLengthB1 = uint8((payload.len shr 8) and 0xff)
+  header.contentLengthB0 = uint8(payload.len and 0xff)
+  await req.client.send(addr header, FCGI_HEADER_LENGTH)
+  await req.client.send(payload.cstring, payload.len)
+
+
+proc respEnd(req: Request) {.async.} =
+  if not req.response.parted:
+    raise newException(IOError, "500 Internal Server Error")
+
+  var header = initHeader(FCGI_STDOUT, req.id, 0, 0)
+  header.contentLengthB1 = 0
+  header.contentLengthB0 = 0
+  await req.client.send(addr header, FCGI_HEADER_LENGTH)
+
+  await req.sendEnd()
+  req.response.parted = false
+
+  if req.keepAlive == 0:
+    req.client.close()
+
 
 #
 # Begin File Server
@@ -236,10 +310,9 @@ proc response*(req: Request, html: string) {.async.} =
 proc sendFile*(req: Request, filepath: string): Future[void] {.async.} =
 
   if not fileExists(filepath):
-    let headers = newHttpHeaders([
-      ("content-type", "text/plain")
-    ])
-    await req.response("404 Not Found", headers, appStatus=404)
+    req.response.headers["content-type"] = "text/plain; charset=utf-8"
+    req.response.statusCode = 404
+    await req.respond("404 Not Found")
     return
 
   let filesize = cast[int](getFileSize(filepath))
@@ -417,10 +490,10 @@ proc processClient(
     of FCGI_STDIN:
       if (req.reqMethod == HttpPost) and (not bodyParser.initialized):
         if req.headers.hasKey("content_length") and parseInt(req.headers["content_length"]) > server.config.maxBody:
-          let headers = newHttpHeaders([
-            ("content-type", "text/plain; charset=utf-8")
-          ])
-          await req.response("413 Payload Too Large", headers, appStatus=413)
+
+          req.response.headers["content-type"] = "text/plain; charset=utf-8"
+          req.response.statusCode = 413
+          await req.respond("413 Payload Too Large")
           return
 
         bodyParser.initialized = true
@@ -464,6 +537,9 @@ proc processClient(
           (let callback = routeCallback(server.routes[req.reqMethod], req.headers["document_uri"]); callback) != nil:
           req.body = bodyParser.body
           await callback(req)
+          # if the response is parted
+          if req.response.parted:
+            await req.respEnd()
 
           # Clear the temporary directory here if auto clean
           if server.config.autoCleanTmpUploadDir and
@@ -485,14 +561,13 @@ proc processClient(
           return
         # end serve static files
 
-        let headers = newHttpHeaders([
-          ("content-type", "text/plain; charset=utf-8")
-        ])
-        await req.response("404 Not Found", headers, appStatus=404)
+        req.response.headers["content-type"] = "text/plain; charset=utf-8"
+        req.response.statusCode = 404
+        await req.respond("404 Not Found")
     else:
       return
   #else:
-  #  await server.response(client, "\c\LNot Implemented")
+  #  await server.respond(client, "\c\LNot Implemented")
 
 
 proc checkRemoteAddrs(server: AsyncFCGIServer, client: AsyncSocket): bool =
