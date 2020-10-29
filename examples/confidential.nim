@@ -1,14 +1,16 @@
 #
 # nimble install https://github.com/mrhdias/fastkiss
-# nim c -r private.nim 
+# nim c -r confidential.nim 
 # http://example:8080/
 #
 import fastkiss
 import fastkiss/basicauth
 from strutils import `%`
 
-proc showPage(req: Request) {.async.} =
-  let htmlpage = """
+#
+# "respond(data: string)" is a shortcut for "await req.respond(data: string)"
+#
+proc showPage(req: Request) {.async.} = """
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -20,8 +22,7 @@ proc showPage(req: Request) {.async.} =
     <a href="auth">Private Page</a>
   </body>
 </html>
-"""
-  await req.response(htmlpage)
+  """.respond
 
 
 proc showPrivatePage(req: Request) {.async.} =
@@ -32,7 +33,7 @@ proc showPrivatePage(req: Request) {.async.} =
     await req.authRequired("My Server")
     return
 
-  let htmlpage = """
+  respond """
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -43,14 +44,10 @@ proc showPrivatePage(req: Request) {.async.} =
   <body>
     Success <strong>$1</strong>!
   </body>
-</html>
-""" % c.username
-
-  await req.response(htmlpage)
-
+</html>""" % c.username
 
 proc main() =
-  let app = newAsyncFCGIServer()
+  let app = newApp()
   app.config.port = 9000 # optional if default port
 
   app.get("/", showPage)
