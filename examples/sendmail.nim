@@ -17,8 +17,10 @@ const
 proc validateEmail(emailAddress: string): bool =
   return match(emailAddress, re"""^(([^<>()\[\]\.,;:\s@\"]+(\.[^<>()\[\]\.,;:\s@\"]+)*)|(\".+\"))@(([^<>()[\]\.,;:\s@\"]+\.)+[^<>()[\]\.,;:\s@\"]{2,})$""")
 
-proc showForm(req: Request) {.async.} =
-  let htmlpage = """
+#
+# "respond(data: string)" is a shortcut for "await req.respond(data: string)"
+#
+proc showForm(req: Request) {.async.} = """
 <!Doctype html>
 <html lang="en">
   <head>
@@ -92,14 +94,13 @@ function sendmail() {
     </script>
   </body>
 </html>
-"""
-  await req.response(htmlpage)
+  """.respond
 
 
 proc sendMail(req: Request) {.async.} =
 
   if req.body.data.len == 0:
-    await req.response(%* {
+    await req.respond(%* {
       "status": "error",
       "message": "No data has been submitted!"
     })
@@ -118,7 +119,7 @@ proc sendMail(req: Request) {.async.} =
     errors.add("Message")
 
   if errors.len > 0:
-    await req.response(%* {
+    await req.respond(%* {
       "status": "not ok",
       "message": "Error in $1!" % errors.join(", ")
     })
@@ -141,20 +142,20 @@ proc sendMail(req: Request) {.async.} =
     await smtpConn.close()
   except ReplyError as e:
     echo "We made an error: ", e.msg
-    await req.response(%* {
+    await req.respond(%* {
       "status": "error",
       "message": "An error occurred while sending the message, please try again later..."
     })
     return
 
-  await req.response(%* {
+  await req.respond(%* {
     "status": "ok",
     "message": "The message is successfully sent!"
   })
 
 
 proc main() = 
-  let app = newAsyncFCGIServer()
+  let app = newApp()
 
   app.config.port = 9000
 
