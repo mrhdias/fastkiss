@@ -27,16 +27,11 @@ proc showSessionPage(
   let sessionId = req.headers.getSessionId()
   if sessionId != "" and (sessionId in sessions.pool):
     if (let session = sessions.getSession(sessionId); session) != nil:
-      await req.response(
-        &"""Hello User {session.map["username"]} Again :-) {sessionId}""",
-        newHttpHeaders([
-          ("content-type", "text/plain;charset=utf-8")
-        ]),
-        200
-      )
+      req.response.headers["content-type"] = "text/plain;charset=utf-8"
+      await req.respond(&"""Hello User {session.map["username"]} Again :-) {sessionId}""")
       # sessions.delSession(sessionId)
     else:
-      await req.response("Session Error!")
+      await req.respond("Session Error!")
 
     return
 
@@ -47,20 +42,14 @@ proc showSessionPage(
   try:
     session = sessions.setSession()
   except AsyncSessionsError as e:
-    await req.response(e.msg)
+    await req.respond(e.msg)
     return
 
   session.map["username"] = "Kiss"
   session.callback = timeoutSession
 
-  await req.response(
-    "New Session",
-    newHttpHeaders([
-      ("Set-Cookie", &"session={session.id}"),
-      ("content-type", "text/html;charset=utf-8")
-    ]),
-    200
-  )
+  req.response.headers["set-cookie"] = &"session={session.id}"
+  await req.respond("New Session")
 
 
 proc main() =
@@ -71,7 +60,7 @@ proc main() =
     maxSessions = 100
   )
 
-  let app = newAsyncFCGIServer()
+  let app = newApp()
   app.config.port = 9000 # optional if default port
 
   # Catch ctrl-c
