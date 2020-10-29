@@ -32,24 +32,25 @@ proc getCredentials*(req: Request): Credentials =
 
 
 proc authRequired*(req: Request, realm: string = "") {.async.} =
+
   let htmlpage = """
 <!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
 <html>
-<head><title>401 Unauthorized</title></head>
-<body>
-<h1>Unauthorized</h1>
-<p>This server could not verify that you
+  <head><title>401 Unauthorized</title></head>
+  <body>
+    <h1>Unauthorized</h1>
+    <p>This server could not verify that you
 are authorized to access the document
 requested.  Either you supplied the wrong
 credentials (e.g., bad password), or your
 browser doesn't understand how to supply
 the credentials required.</p>
-</body>
-</html>
-"""
-  let headers = newHttpHeaders([
-    ("WWW-Authenticate", "Basic realm=\"$1\"" % realm),
-    ("content-length", $(htmlpage.len())),
-    ("content-type", "text/html;charset=utf-8")
-  ])
-  await req.response(htmlpage, headers, appStatus=401)
+  </body>
+</html>"""
+
+  req.response.headers["WWW-Authenticate"] = "Basic realm=\"$1\"" % realm
+  req.response.headers["content-length"] = $(htmlpage.len())
+  req.response.headers["content-type"] = "text/html; charset=utf-8"
+  req.response.statusCode = 401
+
+  await req.respond(htmlpage)
