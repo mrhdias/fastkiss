@@ -11,8 +11,24 @@ import fastkiss/asyncfcgiserver
 export asyncfcgibodyparser
 export asyncfcgiserver
 
+template respond*(data: string) {.dirty.} =
+  ## One time request response
+  ## It is a shortcut to the expression:
+  ## .. code-block::nim
+  ##   await req.respond(data: string)
+  await req.respond(data)
+
+template resp*(data: string) {.dirty.} =
+  ## Breaks the response to the request into multiple parts
+  ## It is a shortcut to the expression:
+  ## .. code-block::nim
+  ##   await req.resp(data: string)
+  await req.resp(data)
+
+
 proc formData*(req: Request): FormTableRef[string, string] =
   req.body.formdata
+
 
 proc formFiles*(req: Request): FormTableRef[string, FileAttributes] =
   req.body.formfiles
@@ -23,7 +39,7 @@ when not defined(testing) and isMainModule:
   proc main() =
     let app = newApp()
     app.get("/", proc (req: Request) {.async.} =
-      await req.response("Hello World!")
+      await req.respond("Hello World!")
     )
     app.run()
   main()
