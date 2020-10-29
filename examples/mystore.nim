@@ -10,6 +10,9 @@
 # nim c -r mystore.nim
 # http://example:8080/
 #
+# "respond(data: string)" is a shortcut for "await req.respond(data: string)"
+# "resp(data: string)" is a shortcut for "await req.resp(data: string)"
+#
 import asyncdispatch
 import fastkiss
 import sugar
@@ -59,7 +62,7 @@ proc addProduct(
     errors.add("price")
   
   if errors.len > 0:
-    await req.response("Errors: $1<br /><a href=\"/\">Back</a>" % errors.join(", "))
+    respond "Errors: $1<br /><a href=\"/\">Back</a>" % errors.join(", ")
     return
 
   try:
@@ -75,10 +78,10 @@ proc addProduct(
       e = getCurrentException()
       msg = getCurrentExceptionMsg()
     echo "Got exception ", repr(e), " with message ", msg
-    await req.response("An error happen when adding the records!<br /><a href=\"/\">Back</a>")
+    "An error happen when adding the records!<br /><a href=\"/\">Back</a>".respond
     return
 
-  await req.response("Record added successfully :-)<br /><a href=\"/\">Back</a>")
+  "Record added successfully :-)<br /><a href=\"/\">Back</a>".respond
 
 
 proc delProduct(
@@ -93,17 +96,17 @@ proc delProduct(
       try:
         let queryResult = await dbConn.rawQuery("delete from products where id in ($1)" % ids.join(","))
         echo queryResult
-        await req.response("Records deleted successfully :-)<br /><a href=\"/\">Back</a>")
+        "Records deleted successfully :-)<br /><a href=\"/\">Back</a>".respond
       except:
         let
           e = getCurrentException()
           msg = getCurrentExceptionMsg()
         echo "Got exception ", repr(e), " with message ", msg
-        await req.response("An error happen when deleting the records!<br /><a href=\"/\">Back</a>")
+        "An error happen when deleting the records!<br /><a href=\"/\">Back</a>".respond
 
       return
 
-  await req.response("No records to delete!<br /><a href=\"/\">Back</a>")
+  "No records to delete!<br /><a href=\"/\">Back</a>".respond
 
 
 
@@ -111,7 +114,7 @@ proc showProducts(
   req: Request,
   dbConn: Connection) {.async.} =
 
-  var content = """
+  """
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -120,12 +123,12 @@ proc showProducts(
     <title>DB Test</title>
   </head>
   <body>
-"""
+  """.resp
 
   let queryResult = await dbConn.rawQuery("select * from products")
   if queryResult.rows.len() > 0 and queryResult.columns.len() == 6:
 
-    content.add("""
+    """
 <form method="post" action="/del">
 <table>
 <tr>
@@ -135,26 +138,26 @@ proc showProducts(
 <th>Quantity</th>
 <th>Price</th>
 <th>Date Added</th>
-</tr>""")
+</tr>""".resp
 
     for row in queryResult.rows:
-      content.add("<tr>")
+      "<tr>".resp
       var first = true
       for col in row:
-        content.add((if first: """<td><input type="checkbox" name="bookId" value="$1"></td>""" else: "<td>$1</td>") % col)
+        resp (if first: """<td><input type="checkbox" name="bookId" value="$1"></td>""" else: "<td>$1</td>") % col
         first = false
-      content.add("<tr>")
-    content.add("""
+      "<tr>".resp
+    """
 <tr>
 <td colspan="6"><input type="submit" value="Delete Books"></td>
 </tr>
 </table>
-</form>""")
+</form>""".resp
 
   else:
-    content.add("No Books!")
+    "No Books!".resp
 
-  content.add("""
+  """
 <form method="post" action="/add">
 <table>
 <tr>
@@ -174,12 +177,9 @@ proc showProducts(
 </tr>
 </table>
 </form>  
-""")
+  """.resp
 
-  content.add("<body></html>")
-  
-  await req.response(content)
-
+  "<body></html>".resp
 
 proc setupDatabase(dbConn: Connection) {.async.} =
   discard await dbConn.selectDatabase(dbname)
@@ -209,7 +209,7 @@ proc main() {.async.} =
 
   await dbConn.setupDatabase()
 
-  let app = newAsyncFCGIServer()
+  let app = newApp()
   app.config.port = 9000 # optional if default port
 
   # Catch ctrl-c
