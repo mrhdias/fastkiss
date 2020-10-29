@@ -183,7 +183,7 @@ proc sendEnd*(req: Request, appStatus: int32 = 0, status = FCGI_REQUEST_COMPLETE
 
 
 #
-# Begin One Time Response
+# Begin One-shot Response
 #
 
 proc respond*(req: Request, content = "") {.async.} =
