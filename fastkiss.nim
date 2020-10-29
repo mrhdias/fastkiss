@@ -7,15 +7,16 @@
 #
 import fastkiss/asyncfcgibodyparser
 import fastkiss/asyncfcgiserver
+import json
 
 export asyncfcgibodyparser
 export asyncfcgiserver
 
-template respond*(data: string) {.dirty.} =
+template respond*(data: string | JsonNode) {.dirty.} =
   ## One time request response
   ## It is a shortcut to the expression:
   ## .. code-block::nim
-  ##   await req.respond(data: string)
+  ##   await req.respond(data: string | JsonNode)
   await req.respond(data)
 
 template resp*(data: string) {.dirty.} =
