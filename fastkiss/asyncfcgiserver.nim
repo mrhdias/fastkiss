@@ -273,8 +273,6 @@ proc respBegin(req: Request, content = "") {.async.} =
   let payload = "$1\c\L" % req.response.stringifyHeaders(-1)
 
   var header = initHeader(FCGI_STDOUT, req.id, payload.len, 0)
-  header.contentLengthB1 = uint8((payload.len shr 8) and 0xff)
-  header.contentLengthB0 = uint8(payload.len and 0xff)
   await req.client.send(addr header, FCGI_HEADER_LENGTH)
 
   await req.client.send(payload.cstring, payload.len)
