@@ -9,9 +9,7 @@ import asyncfile
 import os
 from strutils import `%`
 
-const
-  remoteImg = "https://raw.githubusercontent.com/mrhdias/fastkiss/master/examples/test.jpg"
-
+const remoteImg = "https://raw.githubusercontent.com/mrhdias/fastkiss/master/examples/test.jpg"
 
 proc getImage(): Future[string] {.async.} =
   let client = newAsyncHttpClient()
@@ -28,9 +26,9 @@ proc oneshot(req: Request) {.async.} =
   let filepath = await getImage()
 
   try:
-    req.response.headers["content-type"] = "image/jpeg"
-    req.response.headers["keep-alive"] = "timeout=50, max=200"
     let filesize = cast[int](getFileSize(filepath))
+    req.response.headers["content-type"] = "image/jpeg"
+    req.response.headers["content-length"] = $filesize
 
     let file = openAsync(filepath, fmRead)
     let data = await file.readAll()
