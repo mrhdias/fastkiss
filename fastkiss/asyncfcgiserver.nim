@@ -187,18 +187,14 @@ proc sendEnd*(req: Request, appStatus: int32 = 0, status = FCGI_REQUEST_COMPLETE
 #
 
 iterator getRange(chunkSize, dataLength: int): (int, int) =
-  var
-    beginPos = 0
-    endPos = chunkSize - 1
-
   if chunkSize > 0 and dataLength > 0:
-    while endPos < dataLength:
-      yield (beginPos, endPos)
-      beginPos = endPos + 1
-      endPos = beginPos + chunkSize - 1
+    var n = 0
+    while (n + chunkSize) < dataLength:
+      yield (n, n + chunkSize - 1)
+      n += chunkSize
 
-    if beginPos < endPos:
-      yield (beginPos, dataLength - 1)
+    if n < dataLength:
+      yield (n, dataLength - 1)
 
 
 proc respond*(req: Request, content = "") {.async.} =
@@ -271,11 +267,11 @@ proc respBegin(req: Request, content = "") {.async.} =
   if not req.response.headers.hasKey("status"):
     req.response.headers.add("status", $HttpCode(req.response.statusCode))
 
-  if req.response.headers.hasKey("content-length"):
-    req.response.headers.del("content-length")
-
   if not req.response.headers.hasKey("content-type"):
     req.response.headers.add("content-type", "text/plain; charset=utf-8")
+
+  if req.response.headers.hasKey("content-length"):
+    req.response.headers.del("content-length")
 
   for name, value in req.response.headers.pairs:
     payload.add(&"{name}: {value}\c\L")
