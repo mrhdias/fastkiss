@@ -229,7 +229,7 @@ proc respond*(req: Request, content = "") {.async.} =
   await req.client.send(payload.cstring, payload.len)
 
   if content.len > 0:
-    # The content is read in chunks to avoid the error:
+    # The content is send in chunks to avoid the error:
     # net::ERR_CONTENT_LENGTH_MISMATCH 200 (OK) if big payloads
     const chunkSize = 8*1024
 
