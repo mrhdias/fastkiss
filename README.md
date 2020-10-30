@@ -35,7 +35,7 @@ main()
 ```
 If you are using FastKiss to generate dynamic content of significant size, such as large binary images or large text-based datasets, then you need to consider the use of "**resp**" function instead of "**respond**" to minimize the memory footprint and preserve scalability.
 
-Using "**resp**" function allows FastKiss to return chunks of data back to the client without the need to build an entire structure, or resource in-memory.
+Using "**resp**" function allows FastKiss to return chunks of data back to the client without the need to build an entire structure, or resource in-memory. See [example](https://github.com/mrhdias/fastkiss/blob/master/examples/loadimage.nim). You can use the "**resp**" function like the php "echo" function.
 ```nim
 import fastkiss
 import tables
