@@ -147,6 +147,7 @@ type
 var mt {.threadvar.}: MimeDB
 mt = newMimetypes()
 
+const chunkSize = 8*1024
 
 proc initHeader(kind: HeaderKind, reqId: uint16, contentLength, paddingLenth: int): Header =
   result.version = FCGI_VERSION_1
@@ -181,43 +182,50 @@ proc sendEnd*(req: Request, appStatus: int32 = 0, status = FCGI_REQUEST_COMPLETE
   record.body = initEndRequestBody(appStatus, status)
   await req.client.send(addr record, sizeof(record))
 
-
 #
-# Begin One-shot Response
+# Utility functions
 #
 
-iterator getRange(chunkSize, dataLength: int): (int, int) =
-  if chunkSize > 0 and dataLength > 0:
+iterator getRange(size, dataLength: int): (int, int) =
+  if size > 0 and dataLength > 0:
     var n = 0
-    while (n + chunkSize) < dataLength:
-      yield (n, n + chunkSize - 1)
-      n += chunkSize
+    while (n + size) < dataLength:
+      yield (n, n + size - 1)
+      n += size
 
     if n < dataLength:
       yield (n, dataLength - 1)
 
 
+proc stringifyHeaders(resp: Response, contentLength = -1): string =
+
+  if not resp.headers.hasKey("status"):
+    resp.headers.add("status", $HttpCode(resp.statusCode))
+
+  if not resp.headers.hasKey("content-type"):
+    resp.headers.add("content-type", "text/html; charset=utf-8")
+
+  if resp.headers.hasKey("content-length") and (contentLength == -1):
+    resp.headers.del("content-length")
+  elif not resp.headers.hasKey("content-length") and (contentLength > -1):
+    resp.headers.add("content-length", $contentLength)
+
+  var payload = ""
+  for name, value in resp.headers.pairs:
+    payload.add(&"{name}: {value}\c\L")
+
+  # echo payload
+  return payload
+
+#
+# Begin One-shot Response
+#
+
 proc respond*(req: Request, content = "") {.async.} =
   if req.response.parted:
     raise newException(IOError, "500 Internal Server Error")
 
-  var payload = ""
-
-  if not req.response.headers.hasKey("status"):
-    req.response.headers.add("status", $HttpCode(req.response.statusCode))
-
-  if not req.response.headers.hasKey("content-type"):
-    req.response.headers.add("content-type", "text/html; charset=utf-8")
-
-  if not req.response.headers.hasKey("content-length"):
-    req.response.headers.add("content-length", $(content.len))
-
-  for name, value in req.response.headers.pairs:
-    payload.add(&"{name}: {value}\c\L")
-
-  payload.add(&"\c\L")
-
-  # echo payload
+  let payload = "$1\c\L" % req.response.stringifyHeaders(content.len)
 
   var header = initHeader(FCGI_STDOUT, req.id, payload.len, 0)
   await req.client.send(addr header, FCGI_HEADER_LENGTH)
@@ -227,7 +235,6 @@ proc respond*(req: Request, content = "") {.async.} =
   if content.len > 0:
     # The content is send in chunks to avoid the error:
     # net::ERR_CONTENT_LENGTH_MISMATCH 200 (OK) if big payloads
-    const chunkSize = 8*1024
 
     for b, e in getRange(chunkSize, content.len):
       let dataLen = (e - b) + 1
@@ -262,30 +269,15 @@ proc respBegin(req: Request, content = "") {.async.} =
   if req.response.parted:
     raise newException(IOError, "500 Internal Server Error")
 
-  var payload = ""
-
-  if not req.response.headers.hasKey("status"):
-    req.response.headers.add("status", $HttpCode(req.response.statusCode))
-
-  if not req.response.headers.hasKey("content-type"):
-    req.response.headers.add("content-type", "text/plain; charset=utf-8")
-
-  if req.response.headers.hasKey("content-length"):
-    req.response.headers.del("content-length")
-
-  for name, value in req.response.headers.pairs:
-    payload.add(&"{name}: {value}\c\L")
-
-  if content.len > 0:
-    payload.add(&"\c\L{content}")
+  # set -1 to remove the content-length header if exists
+  let payload = "$1\c\L" % req.response.stringifyHeaders(-1)
 
   var header = initHeader(FCGI_STDOUT, req.id, payload.len, 0)
   header.contentLengthB1 = uint8((payload.len shr 8) and 0xff)
   header.contentLengthB0 = uint8(payload.len and 0xff)
   await req.client.send(addr header, FCGI_HEADER_LENGTH)
 
-  if payload.len > 0:
-    await req.client.send(payload.cstring, payload.len)
+  await req.client.send(payload.cstring, payload.len)
 
   req.response.parted = true
 
@@ -295,17 +287,21 @@ proc resp*(req: Request, payload: string) {.async.} =
     if not req.response.headers.hasKey("content-type"):
       req.response.headers["content-type"] = "text/html; charset=utf-8"
     req.response.statusCode = 200
-    await req.respBegin(payload)
-    return
+    await req.respBegin("")
 
   if payload.len == 0:
     return
 
+  # The content is send in chunks to avoid the error:
+  # net::ERR_CONTENT_LENGTH_MISMATCH 200 (OK) if big payloads
+
   var header = initHeader(FCGI_STDOUT, req.id, payload.len, 0)
-  header.contentLengthB1 = uint8((payload.len shr 8) and 0xff)
-  header.contentLengthB0 = uint8(payload.len and 0xff)
-  await req.client.send(addr header, FCGI_HEADER_LENGTH)
-  await req.client.send(payload.cstring, payload.len)
+  for b, e in getRange(chunkSize, payload.len):
+    let dataLen = (e - b) + 1
+    header.contentLengthB1 = uint8((dataLen shr 8) and 0xff)
+    header.contentLengthB0 = uint8(dataLen and 0xff)
+    await req.client.send(addr header, FCGI_HEADER_LENGTH)
+    await req.client.send(payload[b .. e].cstring, dataLen)
 
 
 proc respEnd(req: Request) {.async.} =
@@ -352,7 +348,6 @@ proc sendFile*(req: Request, filepath: string): Future[void] {.async.} =
 
   await req.client.send(payload.cstring, payload.len)
 
-  const chunkSize = 8*1024
   var remainder = filesize
   let file = openAsync(filepath, fmRead)
 
