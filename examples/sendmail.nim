@@ -10,8 +10,8 @@ import strutils
 import json
 
 const
-  fromAddress = "yoremail@gmail.com"
-  username = "yoremail@gmail.com"
+  fromAddress = "youremail@gmail.com"
+  username = "youremail@gmail.com"
   password = "********"
 
 proc validateEmail(emailAddress: string): bool =
