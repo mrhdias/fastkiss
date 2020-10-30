@@ -234,11 +234,11 @@ proc respond*(req: Request, content = "") {.async.} =
     const chunkSize = 8*1024
 
     for b, e in getRange(chunkSize, content.len):
-      let data = content[b .. e]
-      header.contentLengthB1 = uint8((data.len shr 8) and 0xff)
-      header.contentLengthB0 = uint8(data.len and 0xff)
+      let dataLen = (e - b) + 1
+      header.contentLengthB1 = uint8((dataLen shr 8) and 0xff)
+      header.contentLengthB0 = uint8(dataLen and 0xff)
       await req.client.send(addr header, FCGI_HEADER_LENGTH)
-      await req.client.send(data.cstring, data.len)
+      await req.client.send(content[b .. e].cstring, dataLen)
 
   header.contentLengthB1 = 0
   header.contentLengthB0 = 0
