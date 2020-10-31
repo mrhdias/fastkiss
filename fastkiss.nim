@@ -26,12 +26,18 @@ template resp*(data: string) {.dirty.} =
   ##   await req.resp(data: string)
   await req.resp(data)
 
-
-proc formData*(req: Request): FormTableRef[string, string] =
+template formData*(): FormTableRef[string, string] =
+  ## Object with the value of the fields from submitted html forms without files.
+  ## It is a shortcut to the expression:
+  ## .. code-block::nim
+  ##   req.body.formdata
   req.body.formdata
 
-
-proc formFiles*(req: Request): FormTableRef[string, FileAttributes] =
+template formFiles*(): FormTableRef[string, FileAttributes] =
+  ## Object with the value of the input file fields from submitted html forms.
+  ## It is a shortcut to the expression:
+  ## .. code-block::nim
+  ##   req.body.formfiles
   req.body.formfiles
 
 proc newApp*(): AsyncFCGIServer = newAsyncFCGIServer()
