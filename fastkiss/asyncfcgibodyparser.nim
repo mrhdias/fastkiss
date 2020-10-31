@@ -414,8 +414,7 @@ proc parse*(self: AsyncHttpBodyParser, headers: HttpHeaders) =
 
     self.onData = onData
 
-
-
+  #[ Code to be removed
   elif headers["content_type"] == "application/json":
     ### Json ###
     proc onData(data: string) {.async.} =
@@ -423,7 +422,24 @@ proc parse*(self: AsyncHttpBodyParser, headers: HttpHeaders) =
         self.body.data.add(data)
 
     self.onData = onData
+  ]#
 
+  else:
+    # "application/json" or any other content type
+    proc onData(data: string) {.async.} =
+      if data.len > 0:
+        self.body.data.add(data)
+
+    self.onData = onData
+
+
+func `$`*(body: BodyData): string {.inline.} =
+  $(
+    multipart: body.multipart,
+    formdata: body.formdata,
+    formfiles: body.formfiles,
+    data: body.data
+  )
 
 proc newBodyData(): BodyData =
   new result
