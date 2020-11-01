@@ -241,9 +241,7 @@ proc parse*(self: AsyncHttpBodyParser, headers: HttpHeaders) =
           if readBoundary and c == boundary[countBoundaryChars]:
             if countBoundaryChars == high(boundary):
               # echo "Boundary Found"
-
-              if bag.len > 1:
-                bag.removeSuffix("\c\L")
+              # echo "dubug: bag: >", bag, "< baglen: ", bag.len, " lastchar: >", c, "< buffer: >", buffer, "<"
 
               buffer.add(c)
 
@@ -251,6 +249,9 @@ proc parse*(self: AsyncHttpBodyParser, headers: HttpHeaders) =
                 bag.add(buffer[0 .. diff - 1])
 
               if bag.len > 0:
+                if bag.len > 1:
+                  bag.removeSuffix("\c\L")
+                
                 if formFiles.hasKey(formname) and
                     formFiles.len(formname) > 0 and
                     formFiles.last(formname).filename.len > 0:
