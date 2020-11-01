@@ -327,7 +327,7 @@ proc sendFile*(req: Request, filepath: string): Future[void] {.async.} =
   if not fileExists(filepath):
     req.response.headers["content-type"] = "text/plain; charset=utf-8"
     req.response.statusCode = 404
-    await req.respond("404 Not Found")
+    await req.respond($HttpCode(req.response.statusCode))
     return
 
   let filesize = cast[int](getFileSize(filepath))
