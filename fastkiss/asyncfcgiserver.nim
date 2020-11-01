@@ -507,7 +507,7 @@ proc processClient(
 
           req.response.headers["content-type"] = "text/plain; charset=utf-8"
           req.response.statusCode = 413
-          await req.respond("413 Payload Too Large")
+          await req.respond($HttpCode(req.response.statusCode))
           return
 
         bodyParser.initialized = true
@@ -520,8 +520,10 @@ proc processClient(
       if length != 0:
         var chunk = newString(length)
         copyMem(chunk.cstring, addr buffer, length)
-        # req.body.add(chunk)
-        await bodyParser.onData(chunk)
+        if bodyParser.initialized:
+          await bodyParser.onData(chunk)
+        else:
+          req.rawBody.add(chunk)
       else:
 
         ### begin find routes ###
@@ -577,11 +579,11 @@ proc processClient(
 
         req.response.headers["content-type"] = "text/plain; charset=utf-8"
         req.response.statusCode = 404
-        await req.respond("404 Not Found")
+        await req.respond($HttpCode(req.response.statusCode))
     else:
       return
-  #else:
-  #  await server.respond(client, "\c\LNot Implemented")
+  # else:
+  #   await req.respond("Not Implemented")
 
 
 proc checkRemoteAddrs(server: AsyncFCGIServer, client: AsyncSocket): bool =
