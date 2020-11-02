@@ -3,6 +3,11 @@
 # nim c -d:ssl -r sendmail.nim
 # http://example:8080/sendmail
 #
+# How to send email through your gmail account?
+# For test purposes access this link:
+# https://myaccount.google.com/lesssecureapps
+# Allow less secure apps: OFF (Turn ON)
+#
 import fastkiss
 import smtp
 import re
