@@ -247,7 +247,7 @@ proc parse*(self: AsyncHttpBodyParser, headers: HttpHeaders) =
 
         # echo ">>> Read Content - RC: ", readContent, " RB: ", readBoundary, " RH: ", readHeaders
         #
-        # 1. Read the content until find the boundary
+        # 1. Read the content until the boundary is found.
         #
         if readContent:
  
@@ -261,19 +261,20 @@ proc parse*(self: AsyncHttpBodyParser, headers: HttpHeaders) =
               if ((let diff = buffer.len - boundary.len); diff) > 0:
                 bag.add(buffer[0 .. diff - 1])
 
+              # Empty the bag if it has data.
               if bag.len > 0:
                 if bag.len > 1:
                   bag.removeSuffix("\c\L")
-
                 flushData()
 
               if fileIsOpen and formFiles.hasKey(formname):
                 output.close()
-                # looking inside sequence files for the last insertion
+                # looking inside the sequence files for the last insertion
                 formFiles.table[formname][^1].filesize = getFileSize(uploadDirectory / formFiles.table[formname][^1].filename)
                 fileIsOpen = false
 
-              # next move find the headers or stop if find "--" string, goto 3 and 4..
+              # Next move: goto 3 and 4
+              # Find the beginning of the headers or the boundary ending string "--" to finish.
               readContent = false
               readHeaders = false
               countBoundaryChars = 0
@@ -289,25 +290,26 @@ proc parse*(self: AsyncHttpBodyParser, headers: HttpHeaders) =
 
           bag.add(c)
  
-          # --- begin empty bag if full ---
+          # Empty the bag if it is full
           if bag.len > chunkSize:
             flushData()
-          # --- end empty bag if full ---
 
           countBoundaryChars = 0
           continue
 
         #
-        # 2. Read Headers until find "\c\L\c\L" string
+        # 2. Read the headers until the "\c\L\c\L" string is found
         #
         if readHeaders:
           if c == '\c':
             continue
 
           if pc == '\c' and c == '\L':
-            if buffer.len == 0: # if double newline separator
+            if buffer.len == 0: # if it is a double newline "\c\L\c\L" separator
               readHeaders = false
-              readContent = true # next move read content, goto 1.
+              readContent = true
+              # Next move: goto 1
+              # Read the contents
 
               if rawHeaders.len > 0:
                 let (name, form) = await processHeader(rawHeaders)
@@ -329,7 +331,7 @@ proc parse*(self: AsyncHttpBodyParser, headers: HttpHeaders) =
                     fileIsOpen = true
 
                 else:
-                  ### check if form["data"] is always empty
+                  # check if form["data"] is always empty
                   if name notin formData:
                     formData[name] = newSeq[string]()
 
@@ -346,20 +348,22 @@ proc parse*(self: AsyncHttpBodyParser, headers: HttpHeaders) =
 
 
         #
-        # 3. Check for the "--" string multipart boundary termination
+        # 3. Search for the string "--" which is after the end of boundary to finish.
         #
         if pc == '-' and c == '-':
           # buffer = "" # xxxxxxxx necessary?
           break
 
         #
-        # 4. Check for "\c\L" string for read the headers
+        # 4. Search for the string "\c\L" to read the headers.
         #
         if c == '-':
           buffer.add(c)
         elif pc == '\c' and c == '\L':
-          readHeaders = true # next move read the header, goto 2.
+          readHeaders = true
           buffer = ""
+          # Next move: goto 2
+          # Read headers
 
         # echo "Multipart/data malformed request syntax"
 
