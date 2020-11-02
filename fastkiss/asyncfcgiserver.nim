@@ -186,16 +186,15 @@ proc sendEnd*(req: Request, appStatus: int32 = 0, status = FCGI_REQUEST_COMPLETE
 # Utility functions
 #
 
-iterator getRange(size, dataLength: int): (int, int) =
+iterator getRange(size, dataLength: int): HSlice[int, int] =
   if size > 0 and dataLength > 0:
     var n = 0
     while (n + size) < dataLength:
-      yield (n, n + size - 1)
+      yield n .. (n + size - 1)
       n += size
 
     if n < dataLength:
-      yield (n, dataLength - 1)
-
+      yield n .. (dataLength - 1)
 
 proc stringifyHeaders(resp: Response, contentLength = -1): string =
 
@@ -236,12 +235,12 @@ proc respond*(req: Request, content = "") {.async.} =
     # The content is send in chunks to avoid the error:
     # net::ERR_CONTENT_LENGTH_MISMATCH 200 (OK) if big payloads
 
-    for b, e in getRange(chunkSize, content.len):
-      let dataLen = (e - b) + 1
+    for strRange in getRange(chunkSize, content.len):
+      let dataLen = (strRange.b - strRange.a) + 1
       header.contentLengthB1 = uint8((dataLen shr 8) and 0xff)
       header.contentLengthB0 = uint8(dataLen and 0xff)
       await req.client.send(addr header, FCGI_HEADER_LENGTH)
-      await req.client.send(content[b .. e].cstring, dataLen)
+      await req.client.send(content[strRange].cstring, dataLen)
 
   header.contentLengthB1 = 0
   header.contentLengthB0 = 0
@@ -294,12 +293,12 @@ proc resp*(req: Request, payload: string) {.async.} =
   # net::ERR_CONTENT_LENGTH_MISMATCH 200 (OK) if big payloads
 
   var header = initHeader(FCGI_STDOUT, req.id, payload.len, 0)
-  for b, e in getRange(chunkSize, payload.len):
-    let dataLen = (e - b) + 1
+  for strRange in getRange(chunkSize, payload.len):
+    let dataLen = (strRange.b - strRange.a) + 1
     header.contentLengthB1 = uint8((dataLen shr 8) and 0xff)
     header.contentLengthB0 = uint8(dataLen and 0xff)
     await req.client.send(addr header, FCGI_HEADER_LENGTH)
-    await req.client.send(payload[b .. e].cstring, dataLen)
+    await req.client.send(payload[strRange].cstring, dataLen)
 
 
 proc respEnd(req: Request) {.async.} =
