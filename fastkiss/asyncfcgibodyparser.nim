@@ -40,6 +40,8 @@ type
 
 # const debug = true
 
+const chunkSize = 8 * 1024
+
 proc splitHeader(s: string): array[2, string] =
   var p = find(s, ':')
   if not (p > 0 and p < s.high):
@@ -162,7 +164,6 @@ proc processHeader(rawHeaders: seq[string]): Future[(string, Table[string, strin
   return (formname, formdata)
 
 
-
 proc getBoundary(contentType: string): string =
   let parts = contentType.split(';')
   if parts.len == 2 and parts[0] == "multipart/form-data":
@@ -207,10 +208,9 @@ proc parse*(self: AsyncHttpBodyParser, headers: HttpHeaders) =
       return attributes
 
     var
-      findHeaders = false
-      readHeader = false
       readContent = true
       readBoundary = true
+      readHeaders = false
 
     var countBoundaryChars = 0
 
@@ -224,7 +224,17 @@ proc parse*(self: AsyncHttpBodyParser, headers: HttpHeaders) =
 
     var rawHeaders = newSeq[string]()
     var formname = ""
-    var output: AsyncFile
+    var
+      output: AsyncFile
+      fileIsOpen = false
+
+    template flushData() {.dirty.} =
+      if fileIsOpen and formFiles.hasKey(formname):
+        await output.write(bag)
+        bag = ""
+      elif formData.hasKey(formname):
+        formData[formname] = bag # add values to sequence
+        bag = ""
 
     # if debug: echo "Multipart Form Data"
     proc onData(data: string) {.async.} =
@@ -235,8 +245,11 @@ proc parse*(self: AsyncHttpBodyParser, headers: HttpHeaders) =
         pc = tc
         tc = c
 
+        # echo ">>> Read Content - RC: ", readContent, " RB: ", readBoundary, " RH: ", readHeaders
+        #
+        # 1. Read the content until find the boundary
+        #
         if readContent:
-          # echo "Read Content"
  
           if readBoundary and c == boundary[countBoundaryChars]:
             if countBoundaryChars == high(boundary):
@@ -251,26 +264,18 @@ proc parse*(self: AsyncHttpBodyParser, headers: HttpHeaders) =
               if bag.len > 0:
                 if bag.len > 1:
                   bag.removeSuffix("\c\L")
-                
-                if formFiles.hasKey(formname) and
-                    formFiles.len(formname) > 0 and
-                    formFiles.last(formname).filename.len > 0:
-                  await output.write(bag)
-                elif formData.hasKey(formname):
-                  ### add values to sequence
-                  formData[formname] = bag
-                bag = ""
 
-              if formFiles.hasKey(formname) and
-                  formFiles.len(formname) > 0 and
-                  formFiles.last(formname).filename.len > 0:
+                flushData()
+
+              if fileIsOpen and formFiles.hasKey(formname):
                 output.close()
                 # looking inside sequence files for the last insertion
                 formFiles.table[formname][^1].filesize = getFileSize(uploadDirectory / formFiles.table[formname][^1].filename)
+                fileIsOpen = false
 
-              findHeaders = true # next move find the headers or stop if find "--"
+              # next move find the headers or stop if find "--" string, goto 3 and 4..
               readContent = false
-              readHeader = false
+              readHeaders = false
               countBoundaryChars = 0
               continue
 
@@ -283,21 +288,26 @@ proc parse*(self: AsyncHttpBodyParser, headers: HttpHeaders) =
             buffer = ""
 
           bag.add(c)
+ 
+          # --- begin empty bag if full ---
+          if bag.len > chunkSize:
+            flushData()
+          # --- end empty bag if full ---
 
           countBoundaryChars = 0
           continue
 
-
-        if readHeader:
-          # echo "Read Header"
-
+        #
+        # 2. Read Headers until find "\c\L\c\L" string
+        #
+        if readHeaders:
           if c == '\c':
             continue
 
-          if c == '\L' and pc == '\c':
+          if pc == '\c' and c == '\L':
             if buffer.len == 0: # if double newline separator
-              readHeader = false
-              readContent = true # next move read content
+              readHeaders = false
+              readContent = true # next move read content, goto 1.
 
               if rawHeaders.len > 0:
                 let (name, form) = await processHeader(rawHeaders)
@@ -316,6 +326,7 @@ proc parse*(self: AsyncHttpBodyParser, headers: HttpHeaders) =
                   if (let fullpath = testFilename(uploadDirectory, filename); fullpath.len) > 0:
                     formFiles.table[formname][^1].filename = filename
                     output = openAsync(fullpath, fmWrite)
+                    fileIsOpen = true
 
                 else:
                   ### check if form["data"] is always empty
@@ -334,22 +345,26 @@ proc parse*(self: AsyncHttpBodyParser, headers: HttpHeaders) =
           continue
 
 
-        if findHeaders:
-          # echo "Find Headers"
+        #
+        # 3. Check for the "--" string multipart boundary termination
+        #
+        if pc == '-' and c == '-':
+          # buffer = "" # xxxxxxxx necessary?
+          break
 
-          if pc == '-' and c == '-': # end of multipart form data
-            # buffer = "" # xxxxxxxx necessary?
-            break
-
-          if c == '-':
-            buffer.add(c)
-          elif c == '\L' and pc == '\c':
-            readHeader = true # next move read the haeder
-            buffer = ""
+        #
+        # 4. Check for "\c\L" string for read the headers
+        #
+        if c == '-':
+          buffer.add(c)
+        elif pc == '\c' and c == '\L':
+          readHeaders = true # next move read the header, goto 2.
+          buffer = ""
 
         # echo "Multipart/data malformed request syntax"
 
     self.onData = onData
+
 
   elif headers["content_type"] == "application/x-www-form-urlencoded":
     # if debug: echo "WWW Form Urlencoded"
