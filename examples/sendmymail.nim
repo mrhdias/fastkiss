@@ -354,7 +354,7 @@ proc main() =
   let app = newApp()
 
   app.config.port = 9000
-  app.config.maxBody = 2097152 # Default 2MB = 2097152 Bytes
+  app.config.maxBody = 2097152 # 2MB = 2097152 Bytes
 
   app.get("/", showForm)
   app.post("/sendmail", sendMail)
