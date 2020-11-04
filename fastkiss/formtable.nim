@@ -16,16 +16,25 @@ type
 func `$`*[T](form: FormTableRef[string, T]): string {.inline.} =
   $form.table
 
+proc clear*(form: FormTableRef) {.inline.} =
+  form.table.clear()
+
 proc `[]`*[T](form: FormTableRef[string, T], key: string): T =
   return form.table[key][0]
 
 proc `[]=`*[T](form: FormTableRef, key: string, value: T) =
+  ## Adds the specified value to the specified key. Appends to any existing
+  ## values associated with the key.
   if key notin form.table:
     form.table[key] = @[]
   form.table[key].add(value)
 
 proc `[]=`*[T](form: FormTableRef, key: string, value: seq[T]) =
   form.table[key] = value
+
+proc del*(form: FormTableRef, key: string) =
+  ## Delete the header entries associated with ``key``
+  form.table.del(key)
 
 func contains*(form: FormTableRef, key: string): bool =
   return form.table.hasKey(key)
