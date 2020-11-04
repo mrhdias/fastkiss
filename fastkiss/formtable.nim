@@ -7,6 +7,8 @@
 #
 import tables
 
+export tables
+
 type
   FormTableRef*[K,V] = ref object
     table*: TableRef[K, seq[V]]
