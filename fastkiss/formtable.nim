@@ -39,7 +39,7 @@ proc len*(form: FormTableRef, key: string): int =
 proc last*[T](form: FormTableRef[string, T], key: string): T =
   return form.table[key][^1]
 
-iterator pairs*[T](form: FormTableRef[string, T]): tuple[key, value: T] =
+iterator pairs*[T](form: FormTableRef[string, T]): tuple[key: string, value: T] =
   for k, v in form.table:
     for value in v:
       yield (k, value)
