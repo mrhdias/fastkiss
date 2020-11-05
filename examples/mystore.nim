@@ -220,9 +220,9 @@ proc main() {.async.} =
     quit(QuitSuccess)
   )
 
-  app.get("/", (req: Request) => showProducts(req, dbConn))
-  app.post("/add", (req: Request) => addProduct(req, dbConn))
-  app.post("/del", (req: Request) => delProduct(req, dbConn))
+  app.get("/", (req: Request) => req.showProducts(dbConn))
+  app.post("/add", (req: Request) => req.addProduct(dbConn))
+  app.post("/del", (req: Request) => req.delProduct(dbConn))
 
   app.run()
 
