@@ -284,6 +284,10 @@ proc sendMail(req: Request) {.async.} =
     })
     return
 
+  if not formData["message"].endsWith("\c\L"):
+    # formData["message", ^1].add("\c\L")
+    formData["message"].add("\c\L")
+
   var otherHeaders: seq[tuple[name, value: string]]
   otherHeaders.add(("Date", format(now().toTime(), "ddd, d MMM yyyy HH:mm:ss zzzz", utc())))
 
