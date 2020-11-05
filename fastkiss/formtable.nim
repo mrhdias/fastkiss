@@ -19,17 +19,72 @@ func `$`*[T](form: FormTableRef[string, T]): string {.inline.} =
 proc clear*(form: FormTableRef) {.inline.} =
   form.table.clear()
 
-proc `[]`*[T](form: FormTableRef[string, T], key: string): T =
-  return form.table[key][0]
+# proc `[]`*[T](form: FormTableRef[string, T], key: string): T =
+#   return form.table[key][0]
+
+proc `[]`*[T](form: FormTableRef[string, T], key: string, idx: int | BackwardsIndex = 0): var T =
+  ## Returns the ``idx``'th value associated with the given key. If there are
+  ## no values associated with the key or the ``idx``'th value doesn't exist,
+  ## an exception is raised.
+  ## .. code-block::nim
+  ## var formdata = newFormTable[string, string]()
+  ## formdata["one"] = "um"
+  ## echo formdata["one"]
+  ## formdata["two"] = "dois"
+  ## formdata["two"] = "dos"
+  ## echo formdata["two"]
+  ## echo formdata["two", 0]
+  ## echo formdata["two", 1]
+  ## echo formdata["two", ^1]
+  ## formdata["three"] = "tres"
+  ## echo formdata["three"]
+  return form.table[key][idx]
 
 proc `[]=`*[T](form: FormTableRef, key: string, value: T) =
   ## Adds the specified value to the specified key. Appends to any existing
   ## values associated with the key.
+  ## .. code-block::nim
+  ## var formdata = newFormTable[string, string]()
+  ## formdata["one"] = "um"
+  ## echo formdata["one"]
+  ## formdata["two"] = "dois"
+  ## formdata["two"] = "dos"
+  ## echo formdata["two"]
+  ## formdata["three"] = "tres"
+  ## echo formdata["three"]
   if key notin form.table:
     form.table[key] = @[]
   form.table[key].add(value)
 
+
+proc `[]=`*[T](form: FormTableRef, key: string, idx: int | BackwardsIndex, value: T) =
+  ## Adds the specified value to the ``idx``'th associated with the given key.
+  ## .. code-block::nim
+  ## var formdata = newFormTable[string, string]()
+  ## formdata["one"] = "um"
+  ## echo formdata["one"]
+  ## formdata["two"] = "dois"
+  ## formdata["two"] = "dos"
+  ## echo formdata["two"]
+  ## formdata["two", 1] = "deux"
+  ## echo formdata["two", 0]
+  ## echo formdata["two", 1]
+  ## echo formdata["two", ^1]
+  ## formdata["three"] = "tres"
+  ## echo formdata["three"]
+  form.table[key][idx] = value
+
+
 proc `[]=`*[T](form: FormTableRef, key: string, value: seq[T]) =
+  ## Sets the header entries associated with ``key`` to the specified list of
+  ## values.
+  ## Replaces any existing values.
+  ## .. code-block::nim
+  ## var formdata = newFormTable[string, string]()
+  ## formdata["four"] = @["quatro", "cuatro", "quatre"]
+  ## echo formdata["four"]
+  ## echo formdata["four", 1]
+  ## echo formdata["four", ^1]
   form.table[key] = value
 
 proc del*(form: FormTableRef, key: string) =
@@ -98,3 +153,20 @@ when not defined(testing) and isMainModule:
   echo ">> All Values:"
   for v in ft.allValues("b"):
     echo "b => ", v
+
+  ft["one"] = "um"
+  echo "one => ", ft["one"]
+  ft["two"] = "dois"
+  ft["two"] = "dos"
+  echo "two => ", ft["two"]
+  echo "two => ", ft["two", 0]
+  echo "two => ", ft["two", 1]
+  ft["two", ^1] = "deux"
+  echo "two => ", ft["two", ^1]
+  ft["three"] = "tres"
+  echo "three => ", ft["three"]
+
+  ft["four"] = @["quatro", "cuatro", "quatre"]
+  echo "four => ", ft["four"]
+  echo "four => ", ft["four", 1]
+  echo "four => ", ft["four", ^1]
