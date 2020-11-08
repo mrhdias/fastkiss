@@ -40,12 +40,10 @@ const
 
 
 const
-  FCGI_MAX_LENGTH* = 0xffff
+  FCGI_MAX_LENGTH* = 0xffff # 65535
   FCGI_VERSION_1* = 1
-
-  FGCI_KEEP_CONNECTION* = 1
-
   FCGI_HEADER_LENGTH* = 8
+  FGCI_KEEP_CONNECTION* = 1
 
 type
   RouteAttributes = ref object
