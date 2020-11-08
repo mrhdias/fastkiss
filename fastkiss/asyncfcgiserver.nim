@@ -432,27 +432,17 @@ proc getParams(req: var Request, buffer: ptr array[FCGI_MAX_LENGTH + 8, char], l
       inc(pos, valueLen.int)
       state = READ_FINISH
     of READ_FINISH:
+      # echo name, " = ", value
       state = READ_NAME_LEN
-      case name
-      of "REQUEST_METHOD":
-        case value
-        of "GET": req.reqMethod = HttpGet
-        of "POST": req.reqMethod = HttpPost
-        of "HEAD": req.reqMethod = HttpHead
-        of "PUT": req.reqMethod = HttpPut
-        of "DELETE": req.reqMethod = HttpDelete
-        of "PATCH": req.reqMethod = HttpPatch
-        of "OPTIONS": req.reqMethod = HttpOptions
-        of "CONNECT": req.reqMethod = HttpConnect
-        of "TRACE": req.reqMethod = HttpTrace
+      if name == "REQUEST_METHOD":
+        if httpMethods.hasKey(value):
+          req.reqMethod = httpMethods[value]
         else:
           raise newException(IOError, "400 bad request")
-      of "REQUEST_URI":
+      elif name == "REQUEST_URI":
         req.reqUri = value
-      else:
-        discard
-      req.headers.add(name, value)
 
+      req.headers.add(name, value)
 
 proc processClient(
   server: AsyncFCGIServer,
