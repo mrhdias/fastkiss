@@ -278,6 +278,7 @@ proc respBegin(req: Request, content = "") {.async.} =
 
 
 proc resp*(req: Request, payload: string) {.async.} =
+  # https://trac.nginx.org/nginx/ticket/1292
   if not req.response.parted:
     if not req.response.headers.hasKey("content-type"):
       req.response.headers["content-type"] = "text/html; charset=utf-8"
