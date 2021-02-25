@@ -689,16 +689,23 @@ proc match*(
 # End handle Methods
 #
 
-proc serve*(server: AsyncFCGIServer) {.async.} =
+proc listen(server: AsyncFCGIServer) =
+  ## Listen to the given port and address.
 
-  ## Starts the process of listening for incoming TCP connections
   server.socket = newAsyncSocket()
   if server.config.reuseAddr:
     server.socket.setSockOpt(OptReuseAddr, true)
+
   if server.config.reusePort:
     server.socket.setSockOpt(OptReusePort, true)
+
   server.socket.bindAddr(Port(server.config.port), server.config.address)
   server.socket.listen()
+
+proc serve*(server: AsyncFCGIServer) {.async.} =
+
+  ## Starts the process of listening for incoming TCP connections
+  server.listen()
 
   while true:
     var (address, client) = await server.socket.acceptAddr()
