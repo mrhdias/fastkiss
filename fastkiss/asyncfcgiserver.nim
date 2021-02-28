@@ -79,7 +79,7 @@ type
 
   Response* = ref object
     headers*: HttpHeaders
-    statusCode*: int32
+    statusCode*: HttpCode
     parted: bool
 
   Request* = object
@@ -170,7 +170,7 @@ proc initRequest(): Request =
   result.headers = newHttpHeaders()
   result.response = new Response
   result.response.headers = newHttpHeaders()
-  result.response.statusCode = 200
+  result.response.statusCode = Http200
   result.response.parted = false
 
 
@@ -197,7 +197,7 @@ iterator getRange(size, dataLength: int): HSlice[int, int] =
 proc stringifyHeaders(resp: Response, contentLength = -1): string =
 
   if not resp.headers.hasKey("status"):
-    resp.headers.add("status", $HttpCode(resp.statusCode))
+    resp.headers.add("status", $resp.statusCode)
 
   if not resp.headers.hasKey("content-type"):
     resp.headers.add("content-type", "text/html; charset=utf-8")
@@ -282,7 +282,7 @@ proc resp*(req: Request, payload: string) {.async.} =
   if not req.response.parted:
     if not req.response.headers.hasKey("content-type"):
       req.response.headers["content-type"] = "text/html; charset=utf-8"
-    req.response.statusCode = 200
+    req.response.statusCode = Http200
     await req.respBegin("")
 
   if payload.len == 0:
@@ -324,8 +324,8 @@ proc sendFile*(req: Request, filepath: string): Future[void] {.async.} =
 
   if not fileExists(filepath):
     req.response.headers["content-type"] = "text/plain; charset=utf-8"
-    req.response.statusCode = 404
-    await req.respond($HttpCode(req.response.statusCode))
+    req.response.statusCode = Http404
+    await req.respond($req.response.statusCode)
     return
 
   let filesize = cast[int](getFileSize(filepath))
@@ -494,8 +494,8 @@ proc processClient(
         if req.headers.hasKey("content_length") and parseInt(req.headers["content_length"]) > server.config.maxBody:
 
           req.response.headers["content-type"] = "text/plain; charset=utf-8"
-          req.response.statusCode = 413
-          await req.respond($HttpCode(req.response.statusCode))
+          req.response.statusCode = Http413
+          await req.respond($req.response.statusCode)
           return
 
         bodyParser.initialized = true
@@ -566,8 +566,8 @@ proc processClient(
         # end serve static files
 
         req.response.headers["content-type"] = "text/plain; charset=utf-8"
-        req.response.statusCode = 404
-        await req.respond($HttpCode(req.response.statusCode))
+        req.response.statusCode = Http404
+        await req.respond($req.response.statusCode)
     else:
       return
   # else:
@@ -711,7 +711,7 @@ proc serve*(server: AsyncFCGIServer) {.async.} =
     var (address, client) = await server.socket.acceptAddr()
 
     if server.checkRemoteAddrs(client):
-      asyncCheck processClient(server, client, address)
+      asyncCheck server.processClient(client, address)
     else:
       client.close()
 
