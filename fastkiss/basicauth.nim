@@ -51,6 +51,6 @@ the credentials required.</p>
   req.response.headers["WWW-Authenticate"] = "Basic realm=\"$1\"" % realm
   req.response.headers["content-length"] = $(htmlpage.len())
   req.response.headers["content-type"] = "text/html; charset=utf-8"
-  req.response.statusCode = 401
+  req.response.statusCode = Http401
 
   await req.respond(htmlpage)
