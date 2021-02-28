@@ -9,7 +9,7 @@ proc showPage(req: Request) {.async.} =
 
   req.response.headers["content-type"] = "text/html; charset=utf-8"
   req.response.headers["location"] = "http://www.example.org/"
-  req.response.statusCode = 301
+  req.response.statusCode = Http301
 
   await req.respond("""<!DOCTYPE html>
   <html lang="en">
