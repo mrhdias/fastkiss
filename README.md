@@ -7,26 +7,26 @@ The FastCGI server allows you to easily integrate your FastKiss web application 
 ```nim
 import fastkiss
 import re
-from strutils import `%`
+from strformat import `&`
 
 proc main() =
   let app = newApp()
   app.config.port = 9000 # optional if default port
 
   app.get("/test", proc (req: Request) {.async.} =
-    await req.respond("Hello World!")
+    await req.respond "Hello World!"
   )
 
   app.get(r"/test/(\w+)".re, proc (req: Request) {.async.} =
-    await req.respond("Hello $1!" % req.regexCaptures[0])
+    await req.respond &"Hello {req.regexCaptures[0]}"
   )
 
   app.match(["GET", "POST"], "/which", proc (req: Request) {.async.} =
-    await req.respond("Hello $1!" % $req.reqMethod)
+    await req.respond &"Hello Method {$req.reqMethod}"
   )
-  
+
   app.get("/static", proc (req: Request) {.async.} =
-    await req.sendFile("./test.txt")
+    await req.sendFile "./test.txt"
   )
 
   app.run()
