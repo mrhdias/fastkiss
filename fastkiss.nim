@@ -26,6 +26,13 @@ template resp*(data: string) {.dirty.} =
   ##   await req.resp(data: string)
   await req.resp(data)
 
+template sendFile*(filepath: string) {.dirty.} =
+  ## Respond with a file to the request.
+  ## It is a shortcut to the expression:
+  ## .. code-block::nim
+  ##   await req.sendFile(filepath: string)
+  await req.sendFile(filepath)
+
 template formData*(): FormTableRef[string, string] =
   ## Object with the value of the fields from submitted html forms without files.
   ## It is a shortcut to the expression:
