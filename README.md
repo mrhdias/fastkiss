@@ -13,7 +13,7 @@ proc main() =
   let app = newApp()
   app.config.port = 9000 # optional if default port
 
-  app.get("/test", proc (req: Request) {.async.} =
+  app.get("/", proc (req: Request) {.async.} =
     respond "Hello World!"
   )
 
