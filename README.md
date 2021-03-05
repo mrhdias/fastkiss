@@ -14,19 +14,19 @@ proc main() =
   app.config.port = 9000 # optional if default port
 
   app.get("/test", proc (req: Request) {.async.} =
-    await req.respond "Hello World!"
+    respond "Hello World!"
   )
 
   app.get(r"/test/(\w+)".re, proc (req: Request) {.async.} =
-    await req.respond &"Hello {req.regexCaptures[0]}"
+    respond &"Hello {req.regexCaptures[0]}"
   )
 
   app.match(["GET", "POST"], "/which", proc (req: Request) {.async.} =
-    await req.respond &"Hello Method {$req.reqMethod}"
+    respond &"Hello Method {$req.reqMethod}"
   )
 
   app.get("/static", proc (req: Request) {.async.} =
-    await req.sendFile "./test.txt"
+    sendFile "./test.txt"
   )
 
   app.run()
