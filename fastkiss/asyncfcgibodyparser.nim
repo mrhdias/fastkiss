@@ -13,7 +13,7 @@ import httpcore
 from strutils import isDigit, parseInt, `%`, intToStr,
   rsplit, split, startsWith, removeSuffix, fromHex
 from strformat import `&`
-import formtable
+import private/formtable
 
 export formtable
 
