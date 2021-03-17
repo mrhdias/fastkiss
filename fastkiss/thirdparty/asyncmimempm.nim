@@ -12,7 +12,7 @@ import fastkiss/thirdparty/quotedprintable
 from random import randomize, rand
 
 type
-  MimeMultipartMessage* = ref object of RootObj
+  AsyncMimeMpM* = ref object of RootObj
     boundary*: string
     workingDir: string
 
@@ -44,9 +44,9 @@ proc fileGetContents(filename: string): Future[string] {.async.} =
 
 
 proc message*(
-    self: MimeMultipartMessage,
-    message: string,
-    files: seq[FileAttributes]): Future[string] {.async.} =
+  self: AsyncMimeMpM,
+  message: string,
+  files: seq[FileAttributes]): Future[string] {.async.} =
 
   var parts: seq[string]
   parts.add("This is a message with multiple parts in MIME format.\c\L")
@@ -71,7 +71,7 @@ proc message*(
   result.add("--$1--" % self.boundary)
 
 
-proc newMimeMultipartMessage*(workingDir: string): MimeMultipartMessage =
+proc newAsyncMimeMpM*(workingDir: string): AsyncMimeMpM =
 
   new result
   result.boundary = "_$1_FASTKISS_" % genBoundary()
