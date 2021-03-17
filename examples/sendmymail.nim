@@ -36,7 +36,7 @@ proc showForm(req: Request) {.async.} = """
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width">
-    <title>Send May mail</title>
+    <title>Send My Mail</title>
   </head>
   <body>
     <style>
