@@ -14,12 +14,11 @@
 import fastkiss
 import smtp
 import re
-import strutils, base64, encodings
+import strutils
 import json
-import asyncfile
-import os
-import random
 import times
+import fastkiss/thirdparty/asyncmimempm
+import fastkiss/thirdparty/quotedprintable
 
 const
   fromAddress = "yourmail@gmail.com"
@@ -28,94 +27,8 @@ const
 
 const debug = false
 
-randomize()
-
-func digitsAndLetters(): string =
-  for c in Digits + Letters:
-    result.add(c)
-
-const chars = digitsAndLetters()
-
 proc validateEmail(emailAddress: string): bool =
   return match(emailAddress, re"""^(([^<>()\[\]\.,;:\s@\"]+(\.[^<>()\[\]\.,;:\s@\"]+)*)|(\".+\"))@(([^<>()[\]\.,;:\s@\"]+\.)+[^<>()[\]\.,;:\s@\"]{2,})$""")
-
-#
-# https://en.wikipedia.org/wiki/Quoted-printable
-#
-const safeChars = IdentChars + {
-  ' ', '!', '"', '#', '$', '%', '&', '\'', '(', ')', '*', '+', ',', '-', '.', '/',
-  ':', ';', '<', '>', '?', '@', '[', '\\', ']', '^', '_', '`', '{', '|', '}', '~'
-}
-
-proc quotedPrintable(str, destEncoding: string, srcEncoding = "utf-8", lineLen = 76, newLine = "\r\n"): string =
-  var count = 0
-  for c in convert(str, destEncoding, srcEncoding):
-    if count == lineLen - (1 + newLine.len): # lineLen - 1('=') - 2("\r\n")
-      result.add('=')
-      result.add(newLine)
-      count = 0
-
-    if c.char in safeChars:
-      result.add(c)
-      count += 1
-    else:
-      result.add('=')
-      result.add(c.ord().toHex(2)) # 3(=XX) X = hex
-      count += 3
-
-
-proc genBoundary(): string =
-  for _ in .. 52:
-    result.add(chars[rand(0 .. (chars.len - 1))])
-
-
-proc fileGetContents(filename: string): Future[string] {.async.} =
-  try:
-    let file = openAsync(filename, fmRead)
-    let data = await file.readAll()
-    file.close()
-    return data
-  except OSError as e:
-    echo "$1: $2" % [e.msg, filename]
-
-
-proc stringifyHeaders(headers: varargs[tuple[name, value: string]]): string =
-  for header in headers:
-    result.add("$1: $2\c\L" % [header.name, header.value])
-
-
-#
-# https://en.wikipedia.org/wiki/MIME
-#
-proc mimeMultipartMsg(
-  boundary,
-  message: string,
-  files: seq[FileAttributes],
-  workingDir: string): Future[string] {.async.} =
-
-  var parts: seq[string]
-  parts.add("This is a message with multiple parts in MIME format.\c\L")
-
-  let msgHeaders = stringifyHeaders(
-    ("Content-Type", "text/plain; charset=\"UTF-8\""),
-    ("Content-Transfer-Encoding", "quoted-printable")
-  )
-  parts.add("\c\L$1\c\L$2\c\L" % [msgHeaders, quotedPrintable(message, "utf-8")])
-
-  for file in files:
-    let data = await fileGetContents(workingDir / file.filename)
-    let attchHeaders = stringifyHeaders(
-      ("Content-Type", if file.content_type == "text/plain": "text/plain; charset=\"UTF-8\"" else: file.content_type),
-      ("Content-Transfer-Encoding", if file.content_type == "text/plain": "quoted-printable" else: "base64")
-    )
-    parts.add("\c\L$1\c\L$2\c\L" % [
-      attchHeaders, if file.content_type == "text/plain": quotedPrintable(data, "utf-8") else: encodeMime(data)
-    ])
-
-  var message = parts.join("--$1" % boundary)
-  message.add("--$1--" % boundary)
-
-  return message
 
 
 proc showForm(req: Request) {.async.} = """
@@ -173,11 +86,11 @@ label {
         </div>
         <div>
           <label for="attachment">Attachment:</label>
-          <input id="attachment" type="file" name="attachment" accept="text/*">
+          <input type="file" name="attachment" accept="text/*">
         </div>
         <div>
           <label for="attachment">Attachment:</label>
-          <input id="attachment" type="file" name="attachment" accept="text/*">
+          <input type="file" name="attachment" accept="text/*">
         </div>
         <div>
           <button onclick="sendmail();">Send</button>
@@ -206,10 +119,13 @@ function sendmail() {
   formData.append('subject', subject)
   formData.append('message', message)
 
-  for (let i = 0; i < document.getElementsByName("attachment").length; i++) {
-    let attachments = document.getElementsByName("attachment")[i];
-    if (attachments.files[i] !== undefined) {
-      formData.append('attachment', attachments.files[i])
+  let attacments = document.getElementsByName("attachment");
+  for (let i = 0; i < attacments.length; i++) {
+    let attachment = attacments[i];
+    for (let j = 0; j < attachment.files.length; j++) {
+      if (attachment.files[j] !== undefined) {
+        formData.append('attachment', attachment.files[j])
+      }
     }
   }
 
@@ -293,21 +209,19 @@ proc sendMail(req: Request) {.async.} =
 
   var message = ""
   if (formFiles.len > 0) and ("attachment" in formFiles):
-    let boundary = "_$1_FASTKISS_" % genBoundary()
-
-    otherHeaders.add(("MIME-Version", "1.0"))
-    otherHeaders.add(("Content-Type", "multipart/mixed; boundary=$1" % boundary))
 
     var files: seq[FileAttributes]
     for file in formFiles.allValues("attachment"):
       files.add(file)
 
-    message = await mimeMultipartMsg(
-      boundary,
-      formData["message"],
-      files,
+    let mmpm = newAsyncMimeMpM(
       req.headers["working-directory"]
     )
+    message = await mmpm.message(formData["message"], files)
+
+    otherHeaders.add(("MIME-Version", "1.0"))
+    otherHeaders.add(("Content-Type", "multipart/mixed; boundary=$1" % mmpm.boundary))
+
   else:
     otherHeaders.add(("Content-Type", "text/plain; charset=\"UTF-8\""))
     otherHeaders.add(("Content-Transfer-Encoding", "quoted-printable"))
