@@ -21,7 +21,7 @@ var pid: Pid
 proc launchApp() =
 
   let app = newApp()
-  app.config.port = 9000 # optional if default por
+  app.config.port = 9000 # optional if default port
   app.config.reusePort = true
 
   app.get("/", proc (req: Request) {.async.} =
