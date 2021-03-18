@@ -171,10 +171,10 @@ function sendmail() {
 proc sendMail(req: Request) {.async.} =
 
   if formData.len == 0:
-    respond(%* {
+    respond %*{
       "status": "error",
       "message": "No data has been submitted!"
-    })
+    }
     return
 
   if debug:
@@ -183,7 +183,7 @@ proc sendMail(req: Request) {.async.} =
     echo "Files from Form: ", $formFiles
 
   var errors: seq[string]
-  if not (("to_address" in formData) and validateEmail(formData["to_address"])):
+  if not (("to_address" in formData) and formData["to_address"].validateEmail):
     errors.add("To Address")
 
   if not (("subject" in formData) and (formData["subject"].len > 0)):
@@ -193,10 +193,10 @@ proc sendMail(req: Request) {.async.} =
     errors.add("Message")
 
   if errors.len > 0:
-    await req.respond(%* {
+    respond %*{
       "status": "not ok",
       "message": "Error in the $1!" % errors.join(", ")
-    })
+    }
     return
 
   if not formData["message"].endsWith("\c\L"):
@@ -237,10 +237,10 @@ proc sendMail(req: Request) {.async.} =
 
   if debug:
     echo "Message:\c\L", $msg
-    await req.respond(%* {
+    respond %*{
       "status": "error",
       "message": "The message was not sent the debug is set true!"
-    })
+    }
     return
 
   try:
@@ -255,16 +255,16 @@ proc sendMail(req: Request) {.async.} =
     await smtpConn.close()
   except ReplyError as e:
     echo "We made an error: ", e.msg
-    await req.respond(%* {
+    respond %*{
       "status": "error",
       "message": "An error occurred while sending the message, please try again later..."
-    })
+    }
     return
 
-  await req.respond(%* {
+  respond %*{
     "status": "ok",
     "message": "The message is successfully sent!"
-  })
+  }
 
 
 proc main() = 
