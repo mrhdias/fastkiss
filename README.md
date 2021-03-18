@@ -73,6 +73,9 @@ proc main() =
 
 main()
 ```
+Here's a complete [example](https://github.com/mrhdias/fastkiss/blob/master/examples/sendmymail.nim) of an app to send emails with attachments.
+
+![Send Mail Example](https://raw.githubusercontent.com/mrhdias/fastkiss/master/examples/sendmymail.jpg)
 
 NGINX FastCGI Configuration File Example
 ```
