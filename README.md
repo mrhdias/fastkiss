@@ -39,7 +39,7 @@ Using "**resp**" function allows FastKiss to return chunks of data back to the c
 ```nim
 import fastkiss
 import tables
-from strutils import `%`
+from strformat import `&`
 
 proc showPage(req: Request) {.async.} =
 
@@ -56,11 +56,11 @@ proc showPage(req: Request) {.async.} =
       <table>""".resp
 
   for k, v in pairs(t):
-    resp """<tr>
-        <td><strong>$1</strong></td>
-        <td>$2</td>
+    resp &"""<tr>
+        <td><strong>{k}</strong></td>
+        <td>{v}</td>
       </tr>
-    """ % [$k, v]
+    """
 
   """</table>
     </body>
