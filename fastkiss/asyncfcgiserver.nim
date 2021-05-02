@@ -445,15 +445,15 @@ proc processClient(
           routes: seq[RouteAttributes],
           documentUri: string): proc (request: Request): Future[void] {.closure, gcsafe.} =
 
-          let pattern = if (documentUri.len > 1 and documentUri[^1] == '/'): documentUri[0 ..< ^1] else: documentUri
+          let pathname = if (documentUri.len > 1 and documentUri[^1] == '/'): documentUri[0 ..< ^1] else: documentUri
 
           for route in routes:
             if route.regexPattern != nil:
-              if pattern =~ route.regexPattern:
+              if pathname =~ route.regexPattern:
                 req.regexCaptures = matches
                 return route.callback
             elif route.pathPattern != "":
-              if route.pathPattern == pattern:
+              if route.pathPattern == pathname:
                 return route.callback
 
           return nil
