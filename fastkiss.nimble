@@ -9,7 +9,8 @@ skipDirs = @["examples", "tests"]
 
 # Deps
 
-requires "nim >= 1.4.0"
+requires "nim >= 1.4.6"
+requires "regex >= 0.19.0"
 
 task test, "Test Asynfastcgiserver":
   exec "nim c -r -d:release -d:usestd tests/app.nim"
