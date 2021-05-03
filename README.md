@@ -20,6 +20,11 @@ proc main() =
   app.get(r"/test/(\w+)".re, proc (req: Request) {.async.} =
     respond &"Hello {req.matches.groupCaptures(0)[0]}"
   )
+  
+  # http://example:8080/test/abc-012/def-345/test/xpto
+  app.get(r"/test/(?:([a-z\d]+-[a-z\d]+)/)+test/(\w+)".re, proc (req: Request) {.async.} =
+    respond &"Hello Multi Capture {$req.matches.groupCaptures(0)} and {$req.matches.groupCaptures(1)}"
+  )
 
   app.match(["GET", "POST"], "/method", proc (req: Request) {.async.} =
     respond &"Hello Method {$req.reqMethod}"
