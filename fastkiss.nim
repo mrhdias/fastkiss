@@ -1,6 +1,6 @@
 #
 #         FastKiss Async FastCgi Server
-#        (c) Copyright 2020 Henrique Dias
+#        (c) Copyright 2021 Henrique Dias
 #
 #    See the file "copying.txt", included in this
 #    distribution, for details about the copyright.
@@ -8,9 +8,24 @@
 import fastkiss/asyncfcgibodyparser
 import fastkiss/asyncfcgiserver
 import json
+from regex import RegexMatch
 
 export asyncfcgibodyparser
 export asyncfcgiserver
+
+template matches*(): RegexMatch =
+  ## Result from matching operations in the document_uri. 
+  ## It is a shortcut to the expression:
+  ## .. code-block::nim
+  ##   req.matches
+  req.matches
+
+template groupCaptures*(m: RegexMatch, i: int): seq[string] =
+  ## Return seq of captured document_uri text by group number i.
+  ## It is a shortcut to the expression:
+  ## .. code-block::nim
+  ##   matches.group(i, req.headers["document_uri"])
+  m.group(i, req.headers["document_uri"])
 
 template respond*(data: string | JsonNode) {.dirty.} =
   ## One time request response
