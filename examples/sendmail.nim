@@ -10,7 +10,7 @@
 #
 import fastkiss
 import smtp
-import re
+import regex
 import strutils
 import json
 
@@ -20,7 +20,7 @@ const
   password = "********"
 
 proc validateEmail(emailAddress: string): bool =
-  return match(emailAddress, re"""^(([^<>()\[\]\.,;:\s@\"]+(\.[^<>()\[\]\.,;:\s@\"]+)*)|(\".+\"))@(([^<>()[\]\.,;:\s@\"]+\.)+[^<>()[\]\.,;:\s@\"]{2,})$""")
+  emailAddress.match(re"""^(([^<>()\[\]\.,;:\s@\"]+(\.[^<>()\[\]\.,;:\s@\"]+)*)|(\".+\"))@(([^<>()[\]\.,;:\s@\"]+\.)+[^<>()[\]\.,;:\s@\"]{2,})$""")
 
 #
 # "respond(data: string)" is a shortcut for "await req.respond(data: string)"
