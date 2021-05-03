@@ -1,6 +1,6 @@
 #
 #         FastKiss Async FastCgi Server
-#        (c) Copyright 2020 Henrique Dias
+#        (c) Copyright 2021 Henrique Dias
 #
 #    See the file "copying.txt", included in this
 #    distribution, for details about the copyright.
@@ -14,7 +14,7 @@ import tables
 from sequtils import toSeq, map
 from strformat import `&`
 from strutils import rfind, `%`, parseInt, split, strip, toUpperAscii
-import re
+import regex
 import oids
 import mimetypes
 import json
@@ -78,7 +78,7 @@ type
     reqUri*: string
     client*: AsyncSocket
     headers*: HttpHeaders
-    regexCaptures*: array[20, string]
+    matches*: RegexMatch
     body*: BodyData
     rawBody*: string
     response*: Response
@@ -448,9 +448,8 @@ proc processClient(
           let pathname = if (documentUri.len > 1 and documentUri[^1] == '/'): documentUri[0 ..< ^1] else: documentUri
 
           for route in routes:
-            if route.regexPattern != nil:
-              if pathname =~ route.regexPattern:
-                req.regexCaptures = matches
+            if route.regexPattern.isInitialized:
+              if pathname.match(route.regexPattern, req.matches):
                 return route.callback
             elif route.pathPattern != "":
               if route.pathPattern == pathname:
@@ -505,8 +504,6 @@ proc checkRemoteAddrs(server: AsyncFCGIServer, client: AsyncSocket): bool =
     return remote in server.allowedIps
   return true
 
-
-
 #
 # Begin Handle Methods
 #
@@ -515,7 +512,6 @@ proc initRouteAttributes(
   pattern: string,
   callback: proc (request: Request): Future[void] {.closure, gcsafe.}): RouteAttributes = RouteAttributes(
   pathPattern: pattern,
-  regexPattern: nil,
   callback: callback
 )
 
