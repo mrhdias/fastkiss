@@ -13,7 +13,7 @@
 #
 import fastkiss
 import smtp
-import re
+import regex
 import strutils
 import json
 import times
@@ -28,7 +28,7 @@ const
 const debug = false
 
 proc validateEmail(emailAddress: string): bool =
-  match(emailAddress, re"""^(([^<>()\[\]\.,;:\s@\"]+(\.[^<>()\[\]\.,;:\s@\"]+)*)|(\".+\"))@(([^<>()[\]\.,;:\s@\"]+\.)+[^<>()[\]\.,;:\s@\"]{2,})$""")
+  emailAddress.match(re"""^(([^<>()\[\]\.,;:\s@\"]+(\.[^<>()\[\]\.,;:\s@\"]+)*)|(\".+\"))@(([^<>()[\]\.,;:\s@\"]+\.)+[^<>()[\]\.,;:\s@\"]{2,})$""")
 
 proc showForm(req: Request) {.async.} = """
 <!Doctype html>
