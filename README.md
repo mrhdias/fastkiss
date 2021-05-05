@@ -146,6 +146,11 @@ $ sudo systemctl start nginx / httpd
 $ wget -qO- http://example:8080/test
 Hello World!!⏎
 ```
+To compile a release version use:
+```
+$ nim c -d:release example.nim
+$ ./example
+```
 
 ### Configuration Options
 ```nim
