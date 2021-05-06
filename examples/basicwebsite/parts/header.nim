@@ -4,6 +4,7 @@
 
 let t = {
   "Home": "/",
+  "Nim": "https://nim-lang.org/",
   "FastKISS": "https://github.com/mrhdias/fastkiss",
   "Test": "/test",
   "Contacts": "/contacts"
