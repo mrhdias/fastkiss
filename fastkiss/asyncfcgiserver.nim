@@ -629,7 +629,7 @@ proc serve*(server: AsyncFCGIServer) {.async.} =
   server.listen()
 
   while true:
-    var (address, client) = await server.socket.acceptAddr()
+    let (address, client) = await server.socket.acceptAddr()
 
     if server.checkRemoteAddrs(client):
       asyncCheck server.processClient(client, address)
