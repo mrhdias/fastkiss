@@ -9,6 +9,7 @@ from os import getFileSize, `/`, dirExists, fileExists,
   removeDir, getTempDir, getEnv
 import asyncnet, asyncdispatch, asyncfile
 import httpcore
+from uri import Uri, initUri, parseUri
 import asyncfcgibodyparser
 import tables
 from sequtils import toSeq, map
@@ -75,7 +76,7 @@ type
     id*: uint16
     keepAlive*: uint8
     reqMethod*: HttpMethod
-    reqUri*: string
+    url*: Uri
     client*: AsyncSocket
     headers*: HttpHeaders
     matches*: RegexMatch
@@ -91,6 +92,7 @@ const chunkSize = 8*1024
 
 
 proc initRequest(): Request =
+  result.url = initUri()
   result.keepAlive = 0
   result.headers = newHttpHeaders()
   result.response = new Response
@@ -293,10 +295,10 @@ proc sendFile*(req: Request, filepath: string): Future[void] {.async.} =
 
 
 proc fileserver*(req: Request, staticDir=""): Future[void] {.async.} =
-  var url_path = $req.headers["document_uri"]
+  var urlPath = req.url.path
 
-  url_path = if url_path.len > 1 and url_path[0] == '/': url_path[1 .. ^1] else: "index.html"
-  var path = static_dir / url_path
+  urlPath = if req.url.path.len > 1 and req.url.path[0] == '/': req.url.path[1 .. ^1] else: "index.html"
+  var path = static_dir / urlPath
 
   if dirExists(path):
     path = path / "index.html"
@@ -366,7 +368,8 @@ proc getParams(req: var Request, buffer: ptr array[FCGI_MAX_LENGTH + 8, char], l
         else:
           raise newException(IOError, "400 bad request")
       elif name == "REQUEST_URI":
-        req.reqUri = value
+        # echo "Uri: ", value
+        value.parseUri(req.url)
 
       req.headers.add(name, value)
 
@@ -441,28 +444,29 @@ proc processClient(
 
         ### begin find routes ###
 
-        proc routeCallback(
-          routes: seq[RouteAttributes],
-          documentUri: string): proc (request: Request): Future[void] {.closure, gcsafe.} =
-
-          let pathname = if (documentUri.len > 1 and documentUri[^1] == '/'): documentUri[0 ..< ^1] else: documentUri
-
-          for route in routes:
-            if route.regexPattern.isInitialized:
-              if pathname.match(route.regexPattern, req.matches):
-                return route.callback
-            elif route.pathPattern != "":
-              if route.pathPattern == pathname:
-                return route.callback
-
-          return nil
-
         # for compatibility between apache and nginx servers.
         if not req.headers.hasKey("document_uri") and req.headers.hasKey("request_uri"):
           req.headers["document_uri"] = req.headers["request_uri"].split("?", 1)[0]
 
-        if server.routes.hasKey(req.reqMethod) and req.headers.hasKey("document_uri") and
-          (let callback = routeCallback(server.routes[req.reqMethod], req.headers["document_uri"]); callback) != nil:
+        # echo "document_uri: ", req.headers["document_uri"]
+
+        proc routeCallback(
+          routes: seq[RouteAttributes],
+          urlPath: string): proc (request: Request): Future[void] {.closure, gcsafe.} =
+
+          for route in routes:
+            if route.regexPattern.isInitialized:
+              if urlPath.match(route.regexPattern, req.matches):
+                return route.callback
+            elif route.pathPattern != "":
+              if route.pathPattern == urlPath:
+                return route.callback
+
+          return nil
+
+        if server.routes.hasKey(req.reqMethod) and
+          (let callback = routeCallback(server.routes[req.reqMethod], req.url.path); callback) != nil:
+
           req.body = bodyParser.body
           await callback(req)
           # if the response is parted
