@@ -6,6 +6,7 @@
 The FastCGI server allows you to easily integrate your FastKiss web application into a standard web server environment, taking advantage of existing features provided by a web server developed for this purpose. This allows you to use all the state of the art features such as advanced protocol support (HTTPS, HTTP/2.0), HTTP keep-alive, high performance static file delivery, HTTP compression, or URL redirect/rewrite services without increases the overhead and complexity of building anything into your application code.
 ```nim
 import fastkiss
+from fastkiss/utils import decodeData
 import regex
 from strformat import `&`
 
@@ -20,10 +21,17 @@ proc main() =
   app.get(r"/test/(\w+)".re, proc (req: Request) {.async.} =
     respond &"Hello {req.matches.groupCaptures(0)[0]}"
   )
-  
+
   # http://example:8080/test/abc-012/def-345/test/xpto
   app.get(r"/test/(?:([a-z\d]+-[a-z\d]+)/)+test/(\w+)".re, proc (req: Request) {.async.} =
     respond &"Hello Multi Capture {$req.matches.groupCaptures(0)} and {$req.matches.groupCaptures(1)}"
+  )
+
+  # http://example:8080/myquery?a=1&b=2&c=3
+  app.get("/myquery", proc (req: Request) {.async.} =
+    resp "My Query:\n"
+    for k, v in decodeData(req.url.query):
+      resp &"{k} = {v}\n"
   )
 
   app.match(["GET", "POST"], "/method", proc (req: Request) {.async.} =
