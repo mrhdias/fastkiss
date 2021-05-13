@@ -22,7 +22,7 @@ proc main() =
   asyncCheck app.shutdown()
 
   app.get("/", proc (req: Request) {.async.} =
-    await req.response("Hello World!")
+    await req.respond("Hello World!")
   )
 
   app.run()
