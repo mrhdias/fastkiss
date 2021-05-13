@@ -14,18 +14,18 @@ export asyncfcgibodyparser
 export asyncfcgiserver
 
 template matches*(): RegexMatch =
-  ## Result from matching operations in the document_uri. 
+  ## Result from matching operations in the req.url.path. 
   ## It is a shortcut to the expression:
   ## .. code-block::nim
   ##   req.matches
   req.matches
 
 template groupCaptures*(m: RegexMatch, i: int): seq[string] =
-  ## Return seq of captured document_uri text by group number i.
+  ## Return seq of captured req.url.path text by group number i.
   ## It is a shortcut to the expression:
   ## .. code-block::nim
-  ##   matches.group(i, req.headers["document_uri"])
-  m.group(i, req.headers["document_uri"])
+  ##   matches.group(i, req.url.path)
+  m.group(i, req.url.path)
 
 template respond*(data: string | JsonNode) {.dirty.} =
   ## One time request response
