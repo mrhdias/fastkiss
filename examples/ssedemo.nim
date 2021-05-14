@@ -1,4 +1,8 @@
 #
+# nimble install https://github.com/mrhdias/fastkiss
+# nim c -r ssedemo.nim 
+# http://example:8080/
+#
 # https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events
 # https://httpd.apache.org/docs/trunk/mod/mod_proxy_fcgi.html
 #
@@ -30,7 +34,7 @@ from oids import genOid, `$`
 from md5 import toMD5, `$`
 
 const
-  pingTime = 10 # 10 seconds
+  pingInterval = 10 # 10 seconds
   timeout = 30  # 30 seconds
 
 proc ping(req: Request, testClients: TableRef[string, float]) {.async, gcsafe.} =
@@ -61,7 +65,7 @@ proc ssedemo(req: Request, testClients: TableRef[string, float]) {.async, gcsafe
     var msg = "event: test\ndata: " & $i & "\n\n"
 
     let elapsed = epochTime() - savedTime
-    if key == "" and (elapsed >= pingTime):
+    if key == "" and (elapsed >= pingInterval):
       key = $toMD5($genOid())
       savedTime = epochTime()
       testClients[key] = savedTime
