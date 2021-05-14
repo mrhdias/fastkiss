@@ -35,7 +35,7 @@ from md5 import toMD5, `$`
 
 const
   pingInterval = 10 # 10 seconds
-  timeout = 30  # 30 seconds
+  timeout = 30      # 30 seconds
 
 proc ping(req: Request, testClients: TableRef[string, float]) {.async, gcsafe.} =
   let pair = req.url.query.split('=')
