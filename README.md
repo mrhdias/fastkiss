@@ -106,6 +106,8 @@ server {
     fastcgi_param HTTP_COOKIE $http_cookie;
     # Comment this line if you if you don't need Basic Autentication
     fastcgi_param HTTP_AUTHORIZATION $http_authorization;
+    # Uses REMOTE_ADDR value whenever it needs to deal with visitor IP address.
+    fastcgi_param REMOTE_ADDR $http_x_real_ip;
 
     client_max_body_size 1000M;
     include fastcgi_params;
