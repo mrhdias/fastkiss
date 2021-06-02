@@ -57,7 +57,7 @@ type
     staticDir*: string ## To serve static files such as images, CSS files, and JavaScript files
     maxBody*: int ## The maximum content-length that will be read for the body
 
-  AsyncFCGIServer* = ref object
+  AsyncFCGIServer* = ref object of RootObj
     socket*: AsyncSocket
     allowedIps*: seq[string]
     routes: TableRef[
