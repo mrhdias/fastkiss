@@ -5,18 +5,31 @@
 # nimble install https://github.com/mrhdias/fastkiss
 # nim c -r daemon.nim
 # http://example:8080/
-#
+#[
+Runs on my Laptop Intel Core i3-8130U @ 2.20GHz, 8 GB memory
+
+$ nim c -d:danger --gc:orc daemon.nim 
+$ wrk --latency -d 30 -t 4 -c 100 http://example:8080/
+Running 30s test @ http://example:8080/
+  4 threads and 100 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     7.85ms    5.17ms  34.66ms   66.38%
+    Req/Sec     3.33k   225.11     4.30k    73.75%
+  Latency Distribution
+     50%    7.24ms
+     75%   10.98ms
+     90%   14.99ms
+     99%   22.32ms
+  398161 requests in 30.04s, 66.07MB read
+Requests/sec:  13252.49
+Transfer/sec:      2.20MB
+]#
+
 import fastkiss
 import posix
 import cpuinfo
-import fastkiss/asyncsessions
-from cookies import parseCookies
-from strutils import `%`
-from strformat import `&`
-import sugar
 
 var pid: Pid
-
 
 proc launchApp() =
 
