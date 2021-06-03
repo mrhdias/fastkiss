@@ -380,7 +380,6 @@ proc processClient(
 
   var
     req = initRequest()
-    readLen = 0
     header: Header
     buffer: array[FCGI_MAX_LENGTH + 8, char]
     length: int
@@ -389,7 +388,7 @@ proc processClient(
   let bodyParser = newAsyncHttpBodyParser()
 
   while not client.isClosed:
-    readLen = await client.recvInto(addr header, sizeof(Header))
+    let readLen = await client.recvInto(addr header, sizeof(Header))
     if readLen != sizeof(Header) or header.version.ord < FCGI_VERSION_1:
       return
 
@@ -407,12 +406,13 @@ proc processClient(
       echo "get value"
 
     of FCGI_BEGIN_REQUEST:
-      readLen = await client.recvInto(addr buffer, payloadLen)
+      let readLen = await client.recvInto(addr buffer, payloadLen)
+      if readLen != payloadLen: return
       let begin = cast[ptr BeginRequestBody](addr buffer)
       req.keepAlive = begin.flags and FGCI_KEEP_CONNECTION
 
     of FCGI_PARAMS:
-      readLen = await client.recvInto(addr buffer, payloadLen)
+      let readLen = await client.recvInto(addr buffer, payloadLen)
       if readLen != payloadLen: return
       if length != 0:
         req.getParams(addr buffer, length)
@@ -431,7 +431,7 @@ proc processClient(
         req.headers.add("Working-Directory", bodyParser.workingDir)
         bodyParser.parse(req.headers)
 
-      readLen = await client.recvInto(addr buffer, payloadLen)
+      let readLen = await client.recvInto(addr buffer, payloadLen)
       if readLen != payloadLen: return
       if length != 0:
         var chunk = newString(length)
