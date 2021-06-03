@@ -255,7 +255,8 @@ proc sendFile*(req: Request, filepath: string): Future[void] {.async.} =
     await req.respond($req.response.statusCode)
     return
 
-  let filesize = cast[int](getFileSize(filepath))
+  let file = openAsync(filepath, fmRead)
+  let filesize = cast[int](getFileSize(file))
 
   # if filesize > high(int):
   #   return "The file size exceeds the integer maximum."
@@ -272,7 +273,6 @@ proc sendFile*(req: Request, filepath: string): Future[void] {.async.} =
   await req.client.send(payload.cstring, payload.len)
 
   var remainder = filesize
-  let file = openAsync(filepath, fmRead)
 
   while remainder > 0:
     let data = await file.read(min(remainder, chunkSize))
