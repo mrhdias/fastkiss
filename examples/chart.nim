@@ -39,7 +39,7 @@ proc showPage(req: Request) {.async.} = """
   </head>
   <body>
     <div id="chart"></div>
-    <script src="https://cdn.jsdelivr.net/npm/frappe-charts@1.2.4/dist/frappe-charts.min.iife.js"></script>
+    <script src="https://unpkg.com/frappe-charts@latest"></script>
     <script>
 /*<![CDATA[*/
 
