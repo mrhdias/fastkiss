@@ -39,3 +39,5 @@ proc main() =
   app.get("/", showPage)
 
   app.run()
+  
+main()
