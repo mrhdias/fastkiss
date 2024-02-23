@@ -118,9 +118,9 @@ function sendmail() {
   formData.append('subject', subject)
   formData.append('message', message)
 
-  let attacments = document.getElementsByName("attachment");
-  for (let i = 0; i < attacments.length; i++) {
-    let attachment = attacments[i];
+  let attachments = document.getElementsByName("attachment");
+  for (let i = 0; i < attachments.length; i++) {
+    let attachment = attachments[i];
     for (let j = 0; j < attachment.files.length; j++) {
       if (attachment.files[j] !== undefined) {
         formData.append('attachment', attachment.files[j])
